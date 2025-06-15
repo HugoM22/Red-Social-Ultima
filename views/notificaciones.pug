@@ -1,0 +1,15 @@
+extends layout 
+block content 
+ .container.py-4 
+  h2.mb-4 Solicitudes de amistad
+  if solicitudes.length 
+   each s in solicitudes 
+    .d-flex.align-items-center.mb-2 
+     img.rounded-circle.me-2(src=s.Solicitante.avatarUrl || '/default-avatar.png', width=40, height=40)
+     span.me-auto #{s.Solicitante.nombre} #{s.Solicitante.apellido}
+     form.d-inline(method='post', action='/friend/respond')
+      input(type='hidden', name='solicitudId', value=s.id_friend)
+      button.btn.btn-sm.btn-success.me-1(type='submit', name='action',  value='aceptar') ✔
+      button.btn.btn-sm.btn-danger(type='submit', name='action', value='rechazar') ✖
+   else 
+    p.text-muted No tienes solicitudes pendientes.

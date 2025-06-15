@@ -1,0 +1,49 @@
+extends layout
+
+block content
+  .container.mt-5
+    .text-center.mb-4
+      img.rounded-circle.shadow.mb-3(
+        src=usuario.avatarUrl || "/default-avatar.png",
+        alt="Foto de perfil",
+        width="180",
+        height="180"
+      )
+      h2.mb-1 #{usuario.nombre} #{usuario.apellido}
+      p.text-muted #{usuario.email}
+
+      //– FORMULARIO PARA CAMBIAR AVATAR
+      if session.usuarioId == usuario.id_usuario
+        form.mt-3(method="post", action=`/usuarios/perfil/${usuario.id_usuario}/avatar`, enctype="multipart/form-data")
+          input.form-control(type="file", name="avatar", accept="image/*", required)
+          button.btn.btn-sm.btn-outline-primary.mt-2(type="submit") Cambiar foto de perfil
+
+
+    .d-flex.justify-content-between.align-items-center.mt-5.mb-3
+      h4.fw-bold.text-dark Mis Álbumes
+      a.text-primary.fw-normal(href="/albumes") Ver todos los álbumes
+
+    .row
+      each album in usuario.Albums
+        .col-lg-4.col-md-6.col-sm-12.mb-4
+          //– Enlaza a la ruta que muestra un álbum concreto
+          a(href=`/album/${album.id_album}/albums`, style="text-decoration:none;")
+            .card.shadow-sm.h-100
+              if album.Imagens && album.Imagens.length
+                //– Mostrar la primera imagen como portada
+                img.card-img-top(
+                  src=album.Imagens[0].archivo,
+                  alt=album.titulo,
+                  style="height:200px; object-fit:cover;"
+                )
+              else
+                img.card-img-top(
+                  src="/img/album-default.jpg",
+                  alt="Sin imágenes",
+                  style="height:200px; object-fit:cover;"
+                )
+              .card-body.py-2
+                h6.card-title.text-center.text-dark= album.titulo
+                //– Opcional: mostrar cantidad de imágenes y fecha de creación
+                p.text-center.text-muted.mb-0 #{album.Imagens ? album.Imagens.length : 0} imagen(es)
+                small.d-block.text-center.text-muted Creado el #{album.creado_en.toLocaleDateString()}

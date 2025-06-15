@@ -1,0 +1,59 @@
+extends layout
+
+block content
+  .container.py-4
+    h1.mb-4 Publicar Imagen
+
+    //– 1) Crear álbum
+    form.d-flex.mb-4(method="post", action="/album/crear")
+      input.form-control(type="text", name="titulo", placeholder="Título del nuevo álbum", required)
+      button.btn.btn-outline-secondary.ms-2(type="submit") Crear
+
+    //– 2) Compartir una imagen
+    h2.h5.mt-4 Compartir una imagen
+    form#formPublicar(method="post", action="/publicar", enctype="multipart/form-data")
+      
+      //– Álbum donde publicar
+      label.form-label(for="albumSelect") Álbum donde publicar
+      select.form-select(name="albumId", id="albumSelect", required)
+        option(value="") -- Seleccioná un álbum propio --
+        each alb in misAlbumnesPropios
+          option(value=alb.id_album)= alb.titulo
+
+      //– Título de la imagen
+      label.form-label.mt-3(for="titulo") Título de la imagen
+      input.form-control(type="text", name="titulo", id="titulo", placeholder="Escribí un título", required)
+
+      //– Descripción
+      label.form-label.mt-3(for="descripcion") Descripción
+      textarea.form-control(name="descripcion", id="descripcion", rows="3", placeholder="Añadí una descripción (opcional)")
+
+      //– Subir archivo
+      label.form-label.mt-3(for="archivo") Seleccioná tu archivo
+      input.form-control(type="file", name="archivo", id="archivo", required)
+
+      //– Contactos con quienes compartir (opcional)
+      label.mt-2.mb-1 Contactos que pueden verla
+      if contactos.length
+        each c in contactos
+          .form-check
+            input.form-check-input(
+              type="checkbox",
+              name="compartirCon[]",
+              id=`contacto-${c.id}`,
+              value=c.id
+            )
+            label.form-check-label(for=`contacto-${c.id}`)= c.nombre
+      else
+        p.text-muted No tenés contactos para compartir esta imagen.
+
+      //– Botón publicar
+      button.btn.btn-primary.mt-4(type="submit") Publicar
+
+    //– 3) Tus artesanías compartidas (opcional)
+    h2.h5.mt-5 Tus artesanías
+    if compartidas.length
+      each item in compartidas
+        //– … aquí tu código para listarlas …
+    else
+      p.text-muted Aún no hay publicaciones compartidas contigo.

@@ -1,0 +1,36 @@
+extends layout
+
+block content
+  //- Main layout
+  .container.mt-4
+    .row
+      //- Columna lateral (futuras funcionalidades)
+      .col-md-2
+        //- Aquí puedes agregar filtros o accesos rápidos
+      //- Feed central
+      .col-md-7
+        if posts.length
+          each post in posts
+            .card.mb-4
+              .card-header.d-flex.align-items-center
+                img.rounded-circle(src=post.user.avatarUrl, alt='Avatar', width='40', height='40')
+                .ms-2
+                  strong= `${post.user.nombre} ${post.user.apellido}`
+                  small.text-muted.ms-2= post.createdAt.toLocaleDateString()
+              if post.imageUrl
+                img.card-img-top(src=post.imageUrl, alt='Imagen compartida')
+              .card-body
+                p.card-text= post.descripcion
+                a.btn.btn-sm.btn-outline-secondary(href=`/post/${post.id}/comentarios`) Comentar
+        else
+          p.text-muted Aún no hay publicaciones en tu feed.
+      //- Sección contactos
+      .col-md-3
+        h5.mb-3 Mis contactos
+        if contacts.length
+          ul.list-group
+            each contact in contacts
+              li.list-group-item.p-2
+                a(href=`/perfil/${contact.id}`)= `${contact.nombre} ${contact.apellido}`
+        else
+          p.text-muted No tienes contactos aún.

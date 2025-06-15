@@ -1,0 +1,86 @@
+doctype html
+html(lang="es")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Crear Cuenta – Artesanos.com
+    link(rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css")
+    style.
+      body { background: #f1f3f5; }
+      .card { border: none; border-radius: 1rem; }
+      .form-control, .form-select { border-radius: .5rem; }
+      .btn-success { background: #20c997; border: none; }
+      .btn-success:hover { background: #17a589; }
+
+  body
+    .container.py-5
+      .row.justify-content-center
+        .col-md-8.col-lg-6
+          .card.shadow-sm
+            .card-body.p-4
+              h3.mb-4.text-center.text-success Crear cuenta
+
+              //– Muestra mensaje de error si existe
+              if error
+                .alert.alert-danger= error
+
+              form(action="/registrar", method="post", enctype='multipart/form-data')
+                .row.g-3
+                  .col-md-6
+                    label.form-label(for="nombre") Nombre *
+                    input#nombre.form-control(
+                      type="text", name="nombre", placeholder="Tu nombre", required)
+                  .col-md-6
+                    label.form-label(for="apellido") Apellido *
+                    input#apellido.form-control(
+                      type="text", name="apellido", placeholder="Tu apellido", required)
+
+                  .col-md-6
+                    label.form-label(for="fecha_nacimiento") Fecha de Nacimiento *
+                    input#fecha_nacimiento.form-control(
+                      type="date", name="fecha_nacimiento", required)
+                  .col-md-6
+                    label.form-label(for="sexo") Sexo *
+                    select#sexo.form-select(name="sexo", required)
+                      option(value="" disabled selected) Seleccionar…
+                      option(value="Masculino") Masculino
+                      option(value="Femenino") Femenino
+                      option(value="Otro") Otro
+
+                  .col-12
+                    label.form-label(for="intereses") Intereses *
+                    input#intereses.form-control(
+                      type="text", name="intereses", placeholder="p.ej. Macramé, Acrílico", required)
+
+                  .col-12
+                    label.form-label(for="antecedentes") Antecedentes
+                    input#antecedentes.form-control(
+                      type="text", name="antecedentes", placeholder="…")
+
+                  .col-12
+                    label.form-label(for="avatar") Foto de perfil
+                    input#avatar.form-control(
+                      type="file",
+                      name="avatar",
+                      accept='image/*')
+
+                  .col-12
+                    label.form-label(for="email") Correo Electrónico *
+                    input#email.form-control(
+                      type="email", name="email", placeholder="usuario@mail.com", required)
+
+                  .col-12
+                    label.form-label(for="password") Contraseña *
+                    input#password.form-control(
+                      type="password", name="password", placeholder="••••••••", required)
+
+                button.btn.btn-success.btn-lg.w-100.mt-4(type="submit") Registrarme
+
+              .text-center.mt-3
+                span ¿Ya tienes cuenta? 
+                a(href="/login" class="link-success text-decoration-none") Iniciar sesión
+
+            .card-footer.text-center.py-3.bg-white
+              small.text-muted &copy; 2025 Artesanos.com
+
+    script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js")

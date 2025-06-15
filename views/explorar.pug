@@ -1,0 +1,24 @@
+extends layout
+
+block content
+  .container.py-4
+    h1.mb-4 Explorar usuarios
+
+    if usuarios.length
+      each u in usuarios
+        .row.align-items-center.bg-white.shadow-sm.rounded.mb-3.py-2.mx-0
+          .col-auto
+            img.rounded-circle(
+              src=u.avatarUrl || 'default-avatar.png',
+              alt=`Avatar de ${u.nombre} ${u.apellido}`,
+              width='48', height='48'
+            )
+          .col-6.col-md-4
+            span.fw-semibold #{u.nombre} #{u.apellido}
+          .col-auto.ms-auto
+            form(method='post', action='/friend/request')
+              input(type='hidden', name='receptorId', value=u.id_usuario)
+              button.btn.btn-sm.btn-primary(type='submit') Agregar amigo
+    else
+      p.text-muted No hay otros usuarios registrados todavía.
+
