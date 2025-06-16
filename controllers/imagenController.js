@@ -49,8 +49,6 @@ module.exports = {
         compartidas: []
       });
     } catch (err) {
-      console.error('ERROR en publicarForm:', err.message);
-      console.error('SQL que falló:', err.sql);
       next(err);
     }
   },

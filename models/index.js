@@ -38,9 +38,9 @@ Album.hasMany(Imagen, {foreignKey: 'album_id'});
 
 //Relacion Comentarios -> Imagen y Usuario
 Comentario.belongsTo(Imagen, {foreignKey: 'imagen_id'});
-Imagen.hasMany(Comentario, {foreignKey: 'imagen_id'});
-Comentario.belongsTo(Usuario, {foreignKey: 'usuario_id'});
-Usuario.hasMany(Comentario, {foreignKey: 'usuario_id'});
+Imagen.hasMany(Comentario, {as: 'Comentarios',foreignKey: 'imagen_id'});
+Comentario.belongsTo(Usuario, {as: 'Usuario',foreignKey: 'usuario_id'});
+Usuario.hasMany(Comentario, {as: 'Comentarios', foreignKey: 'usuario_id'});
 
 //Relacion ImagenCompartida -> Imagen y Usuario
 ImagenCompartida.belongsTo(Imagen, {foreignKey: 'imagen_id'});

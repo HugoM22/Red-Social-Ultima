@@ -7,18 +7,18 @@ module.exports = {
     try {
       const usuarioId = req.session.usuarioId;
 
-      // Lista de amigos aceptados
+      // — Lista de amigos aceptados
       const amigos = await Friend.findAll({
         where: {
           estado: 'Aceptado',
           [Op.or]: [
             { solicitante_id: usuarioId },
-            { receptor_id:   usuarioId }
+            { receptor_id:    usuarioId }
           ]
         },
         include: [
-          { model: Usuario, as: 'Solicitante', attributes: ['id_usuario', 'nombre', 'apellido'] },
-          { model: Usuario, as: 'Receptor',   attributes: ['id_usuario', 'nombre', 'apellido'] }
+          { model: Usuario, as: 'Solicitante', attributes: ['id_usuario','nombre','apellido'] },
+          { model: Usuario, as: 'Receptor',    attributes: ['id_usuario','nombre','apellido'] }
         ]
       });
       const contacts = amigos.map(f => {
@@ -26,18 +26,26 @@ module.exports = {
         return { id: amigo.id_usuario, nombre: `${amigo.nombre} ${amigo.apellido}` };
       });
 
-      // Feed de imágenes compartidas contigo
+      // — Feed de imágenes compartidas contigo, con comentarios y autores
       const compartidas = await ImagenCompartida.findAll({
         where: { compartido_con_id: usuarioId },
         include: [{
           model: Imagen,
           include: [
-            { model: Usuario, as: 'Autor', attributes: ['id_usuario', 'nombre', 'avatarUrl'] },
-            { model: Comentario }
+            // Autor de la imagen
+            { model: Usuario, as: 'Autor', attributes: ['id_usuario','nombre','apellido','avatarUrl'] },
+            // Comentarios (con alias 'Comentarios') y su autor
+            {
+              model: Comentario,
+              as: 'Comentarios',
+              include: [{ model: Usuario, as: 'Usuario', attributes: ['id_usuario','nombre','avatarUrl'] }]
+            }
           ]
         }],
         order: [[{ model: Imagen }, 'creado_en', 'DESC']]
       });
+
+      // — Mapeo a un formato plano para la vista, con fallback a []
       const posts = compartidas.map(c => {
         const img = c.Imagen;
         return {
@@ -45,7 +53,19 @@ module.exports = {
           descripcion: img.descripcion,
           imageUrl: img.archivo,
           createdAt: img.creado_en,
-          user: img.Autor
+          user: img.Autor,
+          comentarios: Array.isArray(img.Comentarios)
+            ? img.Comentarios.map(cm => ({
+                id: cm.id_comentario,
+                contenido: cm.text,
+                creadoEn: cm.creado_en,
+                user: {
+                  id: cm.Usuario.id_usuario,
+                  nombre: `${cm.Usuario.nombre} ${cm.Usuario.apellido}`,
+                  avatarUrl: cm.Usuario.avatarUrl
+                }
+              }))
+            : []
         };
       });
 
@@ -121,13 +141,13 @@ module.exports = {
           ]
         },
         include: [
-          { model: Usuario, as: 'Solicitante', attributes: ['id_usuario','nombre','apellido'] },
-          { model: Usuario, as: 'Receptor',   attributes: ['id_usuario','nombre','apellido'] }
+          { model: Usuario, as: 'Solicitante', attributes: ['id_usuario','nombre','apellido','avatarUrl'] },
+          { model: Usuario, as: 'Receptor',   attributes: ['id_usuario','nombre','apellido','avatarUrl'] }
         ]
       });
       const contactos = amigos.map(f => {
         const a = (f.solicitante_id === usuarioId) ? f.Receptor : f.Solicitante;
-        return { id: a.id_usuario, nombre: `${a.nombre} ${a.apellido}` };
+        return { id: a.id_usuario, nombre: `${a.nombre} ${a.apellido}`, avatarUrl: amigo.avatarUrl };
       });
 
       // 2) Títulos automáticos (álbumes de amistad)
