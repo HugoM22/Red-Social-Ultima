@@ -34,6 +34,16 @@ module.exports = {
         }
         return acc;
       }, []);
+      //2 mis propias imaganes en home
+      const propias =await Imagen.findAll({
+        where:{usuario_id: usuarioId},
+        include:[
+          {model:Usuario, as: 'Autor', attributes:['id_usuario','nombre','apellido','avatarUrl']},
+          {model: Comentario, as: 'Comentarios',
+            include:[{model: Usuario, as: 'Usuario', attributes:['id_usuario','nombre','apellido','avatarUrl']}]
+          }
+        ]
+      })
 
       // — 3 Feed de imágenes compartidas conmigo
       const compartidas = await ImagenCompartida.findAll({
@@ -59,6 +69,29 @@ module.exports = {
       });
 
       // — 4. Mapear a posts para la vista
+      const ownPosts = propias.map(img => ({
+          id: img.id_imagen,
+          descripcion:img.descripcion,
+          imageUrl: img.archivo,
+          createdAt: img.creado_en,
+          user: img.Autor,
+          comentarios: (img.Comentarios || []).map(cm => ({
+            id: cm.id_comentario,
+            contenido: cm.text,
+            creadoEn: cm.creado_en,
+            user: {
+              id: cm.Usuario.id_usuario,
+              nombre: cm.Usuario.nombre,
+              apellido: cm.Usuario.apellido,
+              avatarUrl: cm.Usuario.avatarUrl
+            }
+          }))
+      }));
+
+
+
+
+
       const posts = compartidas.map(c => {
         const img = c.Imagen;
         return {
@@ -80,7 +113,8 @@ module.exports = {
           }))
         };
       });
-
+      const post = [...ownPosts, ...posts]
+        .sort((a,b)=>b.createdAt - a.createdAt)
       return res.render('home', { posts, contacts });
     } catch (err) {
       next(err);
