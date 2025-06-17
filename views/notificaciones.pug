@@ -5,7 +5,12 @@ block content
   if solicitudes.length 
    each s in solicitudes 
     .d-flex.align-items-center.mb-2 
-     img.rounded-circle.me-2(src=s.Solicitante.avatarUrl || '/default-avatar.png', width=40, height=40)
+     img.avatar.mx-auto.d-block.rounded-circle(
+      src= usuario.avatarUrl
+            ? `/uploads/${usuario.avatarUrl}`
+            : '/images/default-avatar.png',
+      alt=`Avatar de ${usuario.nombre}`,
+      width='120', height='120')
      span.me-auto #{s.Solicitante.nombre} #{s.Solicitante.apellido}
      form.d-inline(method='post', action='/friend/respond')
       input(type='hidden', name='solicitudId', value=s.id_friend)
