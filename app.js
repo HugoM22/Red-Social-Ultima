@@ -91,7 +91,7 @@ app.use((req, res) => {
 
 // Socket io
 io.on('connection', socket => {
-  const { usuarioId } = socket.request.session.usuarioId;
+  const usuarioId  = socket.request.session.usuarioId;
   if (usuarioId) {
     onlineUsers[usuarioId] = socket.id;
     console.log(`Usuario ${usuarioId} Conectado en socket ${socket.id}`)
