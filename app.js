@@ -40,6 +40,11 @@ const sessionMiddleware = session({
   }
 });
 app.use(sessionMiddleware);
+
+app.use((req,res,next)=>{
+  res.locals.session =req.session || {};
+  next();
+})
 //permitir que socket io use la misma session
 io.use((socket,next)=>{
   sessionMiddleware(socket.request,{},next);
