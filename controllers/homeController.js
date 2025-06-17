@@ -217,7 +217,7 @@ module.exports = {
       if(socketId){
         io.to(socketId).emit('notification:friend_response',{
           solicitudId,
-          estado
+          estado: sol.estado
         })
       }
 
