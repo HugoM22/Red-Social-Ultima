@@ -34,7 +34,7 @@ module.exports = {
         }
         return acc;
       }, []);
-      //2 mis propias imaganes en home
+      //-2 mis propias imaganes en home
       const propias =await Imagen.findAll({
         where:{usuario_id: usuarioId},
         include:[
@@ -88,11 +88,7 @@ module.exports = {
           }))
       }));
 
-
-
-
-
-      const posts = compartidas.map(c => {
+      const sharedPosts = compartidas.map(c => {
         const img = c.Imagen;
         return {
           id: img.id_imagen,
@@ -113,9 +109,9 @@ module.exports = {
           }))
         };
       });
-      const post = [...ownPosts, ...posts]
+      const allPosts = [...ownPosts, ...sharedPosts]
         .sort((a,b)=>b.createdAt - a.createdAt)
-      return res.render('home', { posts, contacts });
+      return res.render('home', { allPosts, contacts });
     } catch (err) {
       next(err);
     }
