@@ -1,4 +1,4 @@
-const { actualizar } = require("../../controllers/usuarioController");
+//const { actualizar } = require("../../controllers/usuarioController");
 
 const socket = io();
 
