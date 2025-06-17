@@ -16,7 +16,9 @@ logs/
 *.log
 
 # Carpetas de subida (Multer)
-
+/public/uploads/*
+# ¡excepto el .gitkeep!
+!/public/uploads/.gitkeep
 
 # Directorios de build / artefactos
 dist/
