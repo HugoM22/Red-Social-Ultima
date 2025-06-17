@@ -109,7 +109,7 @@ module.exports = {
           }))
         };
       });
-      const allPosts = [...ownPosts, ...sharedPosts]
+      const posts = [...ownPosts, ...sharedPosts]
         .sort((a,b)=>b.createdAt - a.createdAt)
       return res.render('home', { posts, contacts });
     } catch (err) {
