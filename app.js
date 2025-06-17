@@ -62,8 +62,8 @@ app.set('trust proxy', 1);
 // Parsers y estáticos
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-//app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.static(path.join(__dirname, 'public')));
+
 
 // Contador de solicitudes
 app.use(async (req, res, next) => {

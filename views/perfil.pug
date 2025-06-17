@@ -4,9 +4,7 @@ block content
   .container.mt-5
     .text-center.mb-4
       img.rounded-circle.shadow.mb-3(
-        src= usuario.avatarUrl
-            ? `/uploads/${usuario.avatarUrl}`
-            : '/images/default-avatar.png',
+        src=usuario.avatarUrl || "/default-avatar.png",
         alt="Foto de perfil",
         width="180",
         height="180"
