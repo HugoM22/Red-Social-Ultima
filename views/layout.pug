@@ -29,13 +29,13 @@ html(lang="es")
                 | Perfil
             li.nav-item.me-3
               a.nav-link.position-relative(href="/notificaciones")
-                i.far.fa-bell.me-1
+                i.far.fa-bell.me-1.fs-4
                 | Notificaciones
                 if pendingFriendCount > 0
                   //– Este span es el círculo rojo
-                  span.position-absolute.top-0.start-100.translate-middle.p-1.bg-danger.rounded-circle
-                  //– Este span muestra el número
-                  span#notif-count.position-absolute.top-0.start-100.translate-middle.text-white.small= pendingFriendCount
+                  span#notif-count.badge.bg-danger.text-white.rounded-pill.position-absolute.top-0.start-100.translate-middle.p-2= pendingFriendCount
+                  //– Contenedor 
+                  div#toast-container.toast-container.position-fixed.top-0.end-0.p-3(style="z-index: 1055;")
             li.nav-item.me-3
               a.nav-link(href="/configuracion")
                 i.fas.fa-cog.me-1
