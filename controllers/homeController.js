@@ -111,7 +111,7 @@ module.exports = {
       });
       const allPosts = [...ownPosts, ...sharedPosts]
         .sort((a,b)=>b.createdAt - a.createdAt)
-      return res.render('home', { allPosts, contacts });
+      return res.render('home', { posts, contacts });
     } catch (err) {
       next(err);
     }
