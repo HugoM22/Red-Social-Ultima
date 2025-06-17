@@ -1,4 +1,4 @@
-// app.js
+
 require('dotenv').config();
 
 const express = require('express');
@@ -17,30 +17,18 @@ const albumRoutes   = require('./routes/albumRoutes');
 const imagenRoutes  = require('./routes/imagenRoutes');
 const friendRoutes  = require('./routes/friendRoutes');
 const { Friend }    = require('./models');
+const { log } = require('console');
 
-const app    = express();
+//const app    = express();
 const server = http.createServer(app);
 const io     = new Server(server);
 
-// Mapa de sockets online
-const onlineUsers = {};
-app.set('io', io);
-app.set('onlineUsers', onlineUsers);
-
-// Si estás detrás de un proxy (Vercel, Railway, etc)
-app.set('trust proxy', 1);
-
-// View engine
+// View
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
-// Parsers y estáticos
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Sesiones
-app.use(session({
+// Sesiones sockete io
+const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
@@ -48,11 +36,26 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production',
     maxAge: 1000 * 60 * 60 * 24,
   }
-}));
-app.use((req, res, next) => {
-  res.locals.session = req.session;
-  next();
 });
+app.use(sessionMiddleware);
+//permitir que socket io use la misma session
+io.use((socket,next)=>{
+  sessionMiddleware(socket.request,{},next);
+});
+
+// Mapa de sockets online
+const onlineUsers = {};
+app.set('io', io);
+app.set('onlineUsers', onlineUsers);
+
+// Railway
+app.set('trust proxy', 1);
+
+
+// Parsers y estáticos
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Contador de solicitudes
 app.use(async (req, res, next) => {
@@ -79,13 +82,18 @@ app.use((req, res) => {
   res.status(404).render('404', { title: 'Página no encontrada' });
 });
 
-// Socket.IO
+// Socket io
 io.on('connection', socket => {
-  const { userId } = socket.handshake.query;
-  if (userId) onlineUsers[userId] = socket.id;
-
+  const { usuarioId } = socket.request.session.usuarioId;
+  if (usuarioId) {
+    onlineUsers[usuarioId] = socket.id;
+    console.log(`Usuario ${usuarioId} Conectado en socket ${socket.id}`)
+  }
   socket.on('disconnect', () => {
-    if (userId) delete onlineUsers[userId];
+    if (usuarioId) {
+      delete onlineUsers[usuarioId];
+      console.log(`Usuario ${usuarioId} Desconectado`)  
+    }
   });
 });
 

@@ -146,6 +146,22 @@ module.exports = {
         receptor_id,
         estado: 'Pendiente'
       });
+      //Emitir notificacion en tiempo real al receptor
+      const io = req.app.get('io');
+      const onlineUsers = req.app.get('onlineUsers');
+      const socketId = onlineUsers[receptor_id];
+
+      if(socketId){
+        io.to(socketId).emit('notification:friend_request',{
+          solicitudId: nuevaSolicitud.id_friend,
+          from:{
+            id: solicitante_id,
+            nombre: req.session.usuarioNombre,
+            apellido: req.session.usuarioApellido,
+            avatarUrl: req.session.usuarioAvatar || '/default-avatar.png'
+          }
+        })
+      }
       return res.redirect('/');
     } catch (err) {
       next(err);
@@ -162,6 +178,18 @@ module.exports = {
 
       sol.estado = action === 'aceptar' ? 'Aceptado' : 'Rechazado';
       await sol.save();
+
+      //emitir notificacion en tiempo real al solicitante
+      const io = req.app.get('io');
+      const onlineUsers = req.app.get('onlineUsers');
+      const socketId = onlineUsers[sol.solicitante_id];
+
+      if(socketId){
+        io.to(socketId).emit('notification:friend_response',{
+          solicitudId,
+          estado
+        })
+      }
 
       if (action === 'aceptar') {
         const usuarioAcept = await Usuario.findByPk(usuarioId);

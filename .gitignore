@@ -16,7 +16,7 @@ logs/
 *.log
 
 # Carpetas de subida (Multer)
-public/uploads/
+
 
 # Directorios de build / artefactos
 dist/
