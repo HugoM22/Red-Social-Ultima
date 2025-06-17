@@ -22,8 +22,13 @@ module.exports =(sequelize, DataTypes) =>{
             defaultValue: DataTypes.NOW
         }
     },{
+        indexes:[
+            {
+                unique:true,
+                fields: ['solicitante_id','receptor_id']
+            }
+        ],
         //tableName:'friend',
-        timestamps: false
-    
+        timestamps: false,
     });
 }

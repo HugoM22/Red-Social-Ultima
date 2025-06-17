@@ -9,16 +9,27 @@ block content
         .row.align-items-center.bg-white.shadow-sm.rounded.mb-3.py-2.mx-0
           .col-auto
             img.rounded-circle(
-              src=u.avatarUrl || 'default-avatar.png',
+              src=u.avatarUrl || '/default-avatar.png',
               alt=`Avatar de ${u.nombre} ${u.apellido}`,
               width='48', height='48'
             )
           .col-6.col-md-4
             span.fw-semibold #{u.nombre} #{u.apellido}
           .col-auto.ms-auto
-            form(method='post', action='/friend/request')
-              input(type='hidden', name='receptorId', value=u.id_usuario)
-              button.btn.btn-sm.btn-primary(type='submit') Agregar amigo
+            if !u.estado
+              // usuario nunca solicitado
+              form(method='post', action='/friend/request')
+                input(type='hidden', name='receptorId', value=u.id_usuario)
+                button.btn.btn-sm.btn-primary(type='submit') Agregar amigo
+            else if u.estado == 'Pendiente'
+              button.btn.btn-sm.btn-outline-secondary(disabled) Pendiente
+            else if u.estado == 'Aceptado'
+              button.btn.btn-sm.btn-success(disabled) Amigos
+            else
+              // rechazado
+              form(method='post', action='/friend/request')
+                input(type='hidden', name='receptorId', value=u.id_usuario)
+                button.btn.btn-sm.btn-warning(type='submit') Volver a solicitar
     else
       p.text-muted No hay otros usuarios registrados todavía.
 

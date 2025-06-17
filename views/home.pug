@@ -24,7 +24,7 @@ block content
 
               //- Imagen (si existe)
               if post.imageUrl
-                img.card-img-top(src=post.imageUrl, alt='Imagen compartida')
+                img.card-img-top.feed-image(src=post.imageUrl, alt='Imagen compartida')
 
               .card-body
                 p.card-text= post.descripcion
@@ -64,7 +64,7 @@ block content
             each c in contacts
               li.list-group-item.p-2
                 a(href=`/perfil/${c.id}`)
-                  img.rounded-circle.me-2(src=c.avatarUrl, width="24", height="24")
+                  img.rounded-circle.me-2(src=c.avatarUrl || '/default-avatar.png', width="24", height="24")
                   |  #{c.nombre}
         else
           p.text-muted No tienes contactos aún.

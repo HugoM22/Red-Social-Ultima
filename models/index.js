@@ -42,11 +42,23 @@ Imagen.hasMany(Comentario, {as: 'Comentarios',foreignKey: 'imagen_id'});
 Comentario.belongsTo(Usuario, {as: 'Usuario',foreignKey: 'usuario_id'});
 Usuario.hasMany(Comentario, {as: 'Comentarios', foreignKey: 'usuario_id'});
 
-//Relacion ImagenCompartida -> Imagen y Usuario
-ImagenCompartida.belongsTo(Imagen, {foreignKey: 'imagen_id'});
-Imagen.hasMany(ImagenCompartida, {foreignKey: 'imagen_id'});
-ImagenCompartida.belongsTo(Usuario, {foreignKey: 'usuario_id'});
-Usuario.hasMany(ImagenCompartida, {foreignKey: 'usuario_id'});
+// Relación ImagenCompartida -> Imagen
+ImagenCompartida.belongsTo(Imagen,    { foreignKey: 'imagen_id' });
+Imagen.hasMany(ImagenCompartida,      { foreignKey: 'imagen_id' });
+
+// Relación ImagenCompartida -> Usuario autor (si lo necesitas)
+ImagenCompartida.belongsTo(Usuario,   { foreignKey: 'usuario_id' });
+Usuario.hasMany(ImagenCompartida,     { foreignKey: 'usuario_id' });
+
+// -- Relación receptor de imagen compartida --
+ImagenCompartida.belongsTo(Usuario,   {
+    as: 'Receptor',
+    foreignKey: 'compartido_con_id'
+});
+Usuario.hasMany(ImagenCompartida,     {
+    as: 'Recibidas',
+    foreignKey: 'compartido_con_id'
+});
 
 //Relacion AlbumTag <-> Album , Tag 
 Album.belongsToMany(Tag,{

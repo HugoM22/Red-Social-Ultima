@@ -36,12 +36,6 @@ module.exports = {
         return { id: a.id_usuario, nombre: `${a.nombre} ${a.apellido}` };
       });
 
-      // 3) (Opcional) solicitudes pendientes
-      // const solicitudes = await Friend.findAll({ ... });
-
-      // 4) (Opcional) tus compartidas en este feed
-      // const compartidas = await ImagenCompartida.findAll({ ... });
-
       return res.render('publicar', {
         misAlbumnesPropios,
         contactos,

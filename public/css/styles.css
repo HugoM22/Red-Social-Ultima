@@ -1,0 +1,11 @@
+.feed-image {
+    width: 100%;
+    max-width: 500px;
+    height: 300px;
+    object-fit: contain; /* Cambia cover por contain */
+    background: #f8f9fa; /* Fondo claro */
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    display: block;
+    margin: 0 auto;
+}

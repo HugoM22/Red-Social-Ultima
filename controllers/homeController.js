@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, where } = require('sequelize');
 const { Usuario, Friend, Album, Imagen, ImagenCompartida, Comentario } = require('../models');
 
 module.exports = {
@@ -7,26 +7,35 @@ module.exports = {
     try {
       const usuarioId = req.session.usuarioId;
 
-      // — Lista de amigos aceptados
+      // — 1. Traer contactos aceptados
       const amigos = await Friend.findAll({
         where: {
           estado: 'Aceptado',
           [Op.or]: [
             { solicitante_id: usuarioId },
-            { receptor_id:    usuarioId }
+            { receptor_id: usuarioId }
           ]
         },
         include: [
-          { model: Usuario, as: 'Solicitante', attributes: ['id_usuario','nombre','apellido'] },
-          { model: Usuario, as: 'Receptor',    attributes: ['id_usuario','nombre','apellido'] }
+          { model: Usuario, as: 'Solicitante', attributes: ['id_usuario','nombre','apellido','avatarUrl'] },
+          { model: Usuario, as: 'Receptor',    attributes: ['id_usuario','nombre','apellido','avatarUrl'] }
         ]
       });
-      const contacts = amigos.map(f => {
+      const contacts = amigos.reduce((acc, f) => {
         const amigo = (f.solicitante_id === usuarioId) ? f.Receptor : f.Solicitante;
-        return { id: amigo.id_usuario, nombre: `${amigo.nombre} ${amigo.apellido}` };
-      });
+        // 2)evitar duplicados
+        if (!acc.find(u => u.id === amigo.id_usuario)) {
+          acc.push({
+            id: amigo.id_usuario,
+            nombre: amigo.nombre,
+            apellido: amigo.apellido,
+            avatarUrl: amigo.avatarUrl
+          });
+        }
+        return acc;
+      }, []);
 
-      // — Feed de imágenes compartidas contigo, con comentarios y autores
+      // — 3 Feed de imágenes compartidas conmigo
       const compartidas = await ImagenCompartida.findAll({
         where: { compartido_con_id: usuarioId },
         include: [{
@@ -34,38 +43,41 @@ module.exports = {
           include: [
             // Autor de la imagen
             { model: Usuario, as: 'Autor', attributes: ['id_usuario','nombre','apellido','avatarUrl'] },
-            // Comentarios (con alias 'Comentarios') y su autor
+            // Comentarios as 'Comentarios'
             {
               model: Comentario,
               as: 'Comentarios',
-              include: [{ model: Usuario, as: 'Usuario', attributes: ['id_usuario','nombre','avatarUrl'] }]
+              include: [{
+                model: Usuario,
+                as: 'Usuario',
+                attributes: ['id_usuario','nombre','apellido','avatarUrl']
+              }]
             }
           ]
         }],
         order: [[{ model: Imagen }, 'creado_en', 'DESC']]
       });
 
-      // — Mapeo a un formato plano para la vista, con fallback a []
+      // — 4. Mapear a posts para la vista
       const posts = compartidas.map(c => {
         const img = c.Imagen;
         return {
           id: img.id_imagen,
-          descripcion: img.descripcion,
+          descripcion:img.descripcion,
           imageUrl: img.archivo,
           createdAt: img.creado_en,
           user: img.Autor,
-          comentarios: Array.isArray(img.Comentarios)
-            ? img.Comentarios.map(cm => ({
-                id: cm.id_comentario,
-                contenido: cm.text,
-                creadoEn: cm.creado_en,
-                user: {
-                  id: cm.Usuario.id_usuario,
-                  nombre: `${cm.Usuario.nombre} ${cm.Usuario.apellido}`,
-                  avatarUrl: cm.Usuario.avatarUrl
-                }
-              }))
-            : []
+          comentarios: (img.Comentarios || []).map(cm => ({
+            id: cm.id_comentario,
+            contenido: cm.text,
+            creadoEn: cm.creado_en,
+            user: {
+              id: cm.Usuario.id_usuario,
+              nombre: cm.Usuario.nombre,
+              apellido: cm.Usuario.apellido,
+              avatarUrl: cm.Usuario.avatarUrl
+            }
+          }))
         };
       });
 
@@ -75,14 +87,40 @@ module.exports = {
     }
   },
 
-  // 2) Explorar usuarios
+  // 2)1 Explorar usuarios
   async showExplorar(req, res, next) {
     try {
       const miId = req.session.usuarioId;
-      const usuarios = await Usuario.findAll({
+
+      // 2.1) Traigo todos los usuarios salvo yo
+      const usuariosRaw = await Usuario.findAll({
         where: { id_usuario: { [Op.ne]: miId } },
         attributes: ['id_usuario','nombre','apellido','avatarUrl']
       });
+
+      // 2.2) Traigo las relaciones *que yo lancé* y están PENDIENTES o ACEPTADAS
+      const lanzadas = await Friend.findAll({
+        where: {
+          solicitante_id: miId,
+          estado: { [Op.in]: ['Pendiente','Aceptado'] } 
+        }
+      });
+      const enviadosIds = lanzadas.map(r => r.receptor_id);
+
+      // 2.3)arreglo final
+      const usuarios = usuariosRaw
+        .filter(u => !enviadosIds.includes(u.id_usuario))
+        .map(u => {
+          const rel = lanzadas.find(r => r.receptor_id === u.id_usuario);
+          return {
+            id_usuario: u.id_usuario,
+            nombre: u.nombre,
+            apellido: u.apellido,
+            avatarUrl: u.avatarUrl,
+            estado: rel ? rel.estado : null   
+          };
+        });
+
       return res.render('explorar', { usuarios });
     } catch (err) {
       next(err);
@@ -93,8 +131,21 @@ module.exports = {
   async sendRequest(req, res, next) {
     try {
       const solicitante_id = req.session.usuarioId;
-      const { receptorId } = req.body;
-      await Friend.create({ solicitante_id, receptor_id: receptorId, estado: 'Pendiente' });
+      const receptor_id = +req.body.receptorId;
+      
+      // 1 comprobar duplicados en ambas direccion
+      const yaExiste = await Friend.findOne({
+        where: { solicitante_id, receptor_id }
+      });
+      if(yaExiste){
+        return res.redirect('/');
+      }
+      //2) si no existia, la creo
+      await Friend.create({
+        solicitante_id,
+        receptor_id,
+        estado: 'Pendiente'
+      });
       return res.redirect('/');
     } catch (err) {
       next(err);
@@ -115,9 +166,9 @@ module.exports = {
       if (action === 'aceptar') {
         const usuarioAcept = await Usuario.findByPk(usuarioId);
         await Album.create({
-          titulo: `${usuarioAcept.nombre} ${usuarioAcept.apellido}`,
-          usuario_id: sol.solicitante_id,
-          autoCreado: true
+          titulo:      `${usuarioAcept.nombre} ${usuarioAcept.apellido}`,
+          usuario_id:  sol.solicitante_id,
+          autoCreado:  true
         });
       }
       return res.redirect('/');
@@ -137,7 +188,7 @@ module.exports = {
           estado: 'Aceptado',
           [Op.or]: [
             { solicitante_id: usuarioId },
-            { receptor_id:   usuarioId }
+            { receptor_id: usuarioId }
           ]
         },
         include: [
@@ -201,7 +252,7 @@ module.exports = {
   async publishImage(req, res, next) {
     try {
       const usuarioId = req.session.usuarioId;
-      const file      = req.file;
+      const file = req.file;
       const { descripcion, compartirCon, albumId, titulo } = req.body;
 
       if (!file) {
@@ -210,19 +261,19 @@ module.exports = {
 
       // 1) Crear la imagen
       const imagen = await Imagen.create({
-        archivo:    `/uploads/${file.filename}`,
+        archivo: `/uploads/${file.filename}`,
         titulo,
         descripcion,
-        album_id:   albumId || null,
+        album_id: albumId || null,
         usuario_id: usuarioId
       });
 
-      // 2) Normalizar lista de IDs (puede venir string, array o undefined)
+      // 2) Normalizar lista de ID
       const lista = Array.isArray(compartirCon)
         ? compartirCon.filter(Boolean)
         : [compartirCon].filter(Boolean);
 
-      // 3) Crear los registros en ImagenCompartida usando el campo correcto
+      // 3) Crear los registros en ImagenCompartida
       for (const compartidoConId of lista) {
         await ImagenCompartida.create({
           imagen_id:          imagen.id_imagen,

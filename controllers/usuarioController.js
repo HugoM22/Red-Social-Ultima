@@ -61,9 +61,6 @@ module.exports={
             next(err)
         }
     },
-    /*--------------------------------------------
-        Explorar usuarios y solicitudes de amistad
-    --------------------------------------------*/
     //listar todos los usuarios (menos el logueado)
     async listarUsuarios(req,res,next){
         try{

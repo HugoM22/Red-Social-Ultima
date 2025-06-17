@@ -17,7 +17,7 @@ module.exports ={
                 await relacion.destroy();
                 return res.json({status:'eliminado'});
             }
-            await Friend.create({ solicitante_id: usuarioId, receptor_id: amigoId });
+            await Friend.create({ solicitante_id: usuarioId, receptor_id: amigoId,estado:'Pendiente' });
             res.json({ status: 'agregado' });
         } catch (err) {
             next(err);
