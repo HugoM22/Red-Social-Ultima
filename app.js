@@ -10,6 +10,8 @@ const { Server } = require('socket.io');
 const sequelize = require('./config/database');
 require('./models'); // carga tus modelos
 
+const app    = express();
+
 const authRoutes    = require('./routes/authRoutes');
 const homeRoutes    = require('./routes/homeRoutes');
 const usuarioRoutes = require('./routes/usuarioRoutes');
@@ -19,7 +21,7 @@ const friendRoutes  = require('./routes/friendRoutes');
 const { Friend }    = require('./models');
 const { log } = require('console');
 
-//const app    = express();
+
 const server = http.createServer(app);
 const io     = new Server(server);
 
