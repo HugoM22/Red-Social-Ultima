@@ -1,13 +1,14 @@
+// app.js
 require('dotenv').config();
 
 const express = require('express');
-const path = require('path');
-const http = require('http');
+const path    = require('path');
+const http    = require('http');
 const session = require('express-session');
 const { Server } = require('socket.io');
 
 const sequelize = require('./config/database');
-require('./models'); // importa todos tus modelos y relaciones
+require('./models'); // carga tus modelos
 
 const authRoutes    = require('./routes/authRoutes');
 const homeRoutes    = require('./routes/homeRoutes');
@@ -21,19 +22,19 @@ const app    = express();
 const server = http.createServer(app);
 const io     = new Server(server);
 
-// Para almacenar sockets conectados
+// Mapa de sockets online
 const onlineUsers = {};
 app.set('io', io);
 app.set('onlineUsers', onlineUsers);
 
-// Si usas Vercel o proxy inverso
+// Si estás detrás de un proxy (Vercel, Railway, etc)
 app.set('trust proxy', 1);
 
-// Motor de vistas
+// View engine
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
-// Middlewares
+// Parsers y estáticos
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -45,7 +46,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60 * 24, // 1 día
+    maxAge: 1000 * 60 * 60 * 24,
   }
 }));
 app.use((req, res, next) => {
@@ -53,13 +54,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// Contador de solicitudes pendientes
+// Contador de solicitudes
 app.use(async (req, res, next) => {
   if (req.session.usuarioId) {
-    const count = await Friend.count({
+    res.locals.pendingFriendCount = await Friend.count({
       where: { receptor_id: req.session.usuarioId, estado: 'Pendiente' }
     });
-    res.locals.pendingFriendCount = count;
   } else {
     res.locals.pendingFriendCount = 0;
   }
@@ -79,7 +79,7 @@ app.use((req, res) => {
   res.status(404).render('404', { title: 'Página no encontrada' });
 });
 
-// Socket.IO: gestión de conexiones y mapa de usuarios online
+// Socket.IO
 io.on('connection', socket => {
   const { userId } = socket.handshake.query;
   if (userId) onlineUsers[userId] = socket.id;
@@ -89,11 +89,11 @@ io.on('connection', socket => {
   });
 });
 
-// Conexión a la DB, sincronización y arranque del servidor
+// Levantar DB y servidor
 (async () => {
   try {
     await sequelize.authenticate();
-    console.log('✅ Conexión a la base de datos.✅');
+    console.log('✅ Conexión a la base de datos.');
     await sequelize.sync();
     console.log('✅ Tablas sincronizadas correctamente');
 
@@ -101,9 +101,10 @@ io.on('connection', socket => {
     server.listen(PORT, () => {
       console.log(`Servidor corriendo en http://localhost:${PORT}`);
     });
-  } catch (error) {
-    console.error('⛔⛔ No se pudo conectar a la base de datos:', error);
+  } catch (err) {
+    console.error('⛔⛔ No se pudo conectar a la base de datos:', err);
     process.exit(1);
   }
 })();
+
 
