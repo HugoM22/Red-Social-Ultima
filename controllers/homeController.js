@@ -171,7 +171,7 @@ module.exports = {
         return res.redirect('/');
       }
       //2) si no existia, la creo
-      await Friend.create({
+      const nuevaSolicitud = await Friend.create({
         solicitante_id,
         receptor_id,
         estado: 'Pendiente'
