@@ -254,10 +254,17 @@ module.exports = {
           { model: Usuario, as: 'Receptor',   attributes: ['id_usuario','nombre','apellido','avatarUrl'] }
         ]
       });
-      const contactos = amigos.map(f => {
+      const contactos = amigos.reduce((acc,f)=> {
         const a = (f.solicitante_id === usuarioId) ? f.Receptor : f.Solicitante;
-        return { id: a.id_usuario, nombre: `${a.nombre} ${a.apellido}`, avatarUrl: amigo.avatarUrl };
-      });
+        if(!acc.find(u=> u.id === a.id_usuario)){
+          acc.push({
+            id: a.id_usuario,
+            nombre: `${a.nombre} ${a.apellido}`,
+            avatarUrl: a.avatarUrl
+          })
+        }
+          return acc;
+        },[]);
 
       // 2) Títulos automáticos (álbumes de amistad)
       const titulosAuto = contactos.map(c => c.nombre);
