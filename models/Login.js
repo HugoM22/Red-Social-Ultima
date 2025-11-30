@@ -31,4 +31,4 @@ module.exports = (sequelize, DataTypes) => {
         //tableName: 'login',
         timestamps: false
     });
-    };
+};

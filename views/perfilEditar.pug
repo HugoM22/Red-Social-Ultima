@@ -1,0 +1,32 @@
+extends layout
+
+block content
+  .container.py-4
+    h1.mb-4 Editar perfil
+
+    form(method="post", action=`/usuarios/perfil/${usuario.id_usuario}`)
+      .row
+        .col-md-6.mb-3
+          label.form-label(for="nombre") Nombre
+          input.form-control(type="text", name="nombre", id="nombre", required, value=usuario.nombre)
+        .col-md-6.mb-3
+          label.form-label(for="apellido") Apellido
+          input.form-control(type="text", name="apellido", id="apellido", required, value=usuario.apellido)
+
+      .mb-3
+        label.form-label(for="sexo") Sexo
+        select.form-select(name="sexo", id="sexo")
+          option(value="MASCULINO" selected=usuario.sexo==='MASCULINO') Masculino
+          option(value="FEMENINO"  selected=usuario.sexo==='FEMENINO') Femenino
+          option(value="OTRO"      selected=usuario.sexo==='OTRO') Otro
+
+      .mb-3
+        label.form-label(for="intereses") Intereses
+        input.form-control(type="text", name="intereses", id="intereses", value=usuario.intereses)
+
+      .mb-3
+        label.form-label(for="antecedentes") Antecedentes
+        textarea.form-control(name="antecedentes", id="antecedentes", rows="3")= usuario.antecedentes
+
+      button.btn.btn-primary(type="submit") Guardar cambios
+     

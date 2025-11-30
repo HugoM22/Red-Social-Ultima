@@ -19,7 +19,24 @@ module.exports = {
         //2 Obtener la imagen con su autor
         const imagen = await Imagen.findByPk(imagenId,{
             include:[{model:Usuario, as: 'Autor', attributes:['id_usuario']}]
-        })
+        });
+        const nombreSesion =
+            req.session.usuarioNombre   ||
+            req.session.nombreUsuario   ||
+            req.session.nombre          ||
+            '';
+
+            const apellidoSesion =
+            req.session.usuarioApellido ||
+            req.session.apellidoUsuario ||
+            req.session.apellido        ||
+            '';
+
+            const avatarSesion =
+            req.session.usuarioAvatar   ||
+            req.session.avatarUrl       ||
+            '/default-avatar.png';
+
         //3 emitir notificacion en tiempo real al auto de la img
         const io = req.app.get('io');
         const onlineUsers = req.app.get('onlineUsers');
@@ -31,9 +48,9 @@ module.exports = {
                 comentarioId: comment.id_comentario,
                 autor:{
                     id: usuarioId,
-                    nombre: req.session.usuarioNombre,
-                    apellido: req.session.usuarioApellido,
-                    avatarUrl: req.session.usuarioAvatar || '/default-avatar.png'
+                    nombre: nombreSesion,
+                    apellido: apellidoSesion,
+                    avatarUrl: avatarSesion
                 },
                 excerpt: comment.text.slice(0,30)
             });

@@ -92,15 +92,23 @@ app.use((req, res) => {
 
 // Socket io
 io.on('connection', socket => {
-  const usuarioId  = socket.request.session.usuarioId;
+  const usuarioId = socket.request.session.usuarioId;
+
   if (usuarioId) {
     onlineUsers[usuarioId] = socket.id;
-    console.log(`Usuario ${usuarioId} Conectado en socket ${socket.id}`)
+    console.log(`Usuario ${usuarioId} Conectado en socket ${socket.id}`);
   }
+
+  socket.on('join', data => {
+    if (data && data.userId) {
+      onlineUsers[data.userId] = socket.id;
+    }
+  });
+
   socket.on('disconnect', () => {
-    if (usuarioId) {
+    if (usuarioId && onlineUsers[usuarioId] === socket.id) {
       delete onlineUsers[usuarioId];
-      console.log(`Usuario ${usuarioId} Desconectado`)  
+      console.log(`Usuario ${usuarioId} Desconectado`);
     }
   });
 });

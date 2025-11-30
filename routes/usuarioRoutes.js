@@ -9,14 +9,16 @@ router.use(authMiddleware);
 //Listar todos los usuarios (excepto el logueado)
 router.get('/explorar', usuarioController.listarUsuarios);
 
-//enviar solicitud de amistad
-router.post('/friend/request', usuarioController.enviarSolicitud);
-
-
 
 // -----Perfil-----
 //ver perfil de cualquier usuario
 router.get('/perfil/:id', authMiddleware, usuarioController.verPerfil);
+
+//formulario para cambiar clave
+router.get('/perfil/:id/password', authMiddleware, usuarioController.formPassword);
+
+//procesar cambio de clave
+router.post('/perfil/:id/password', authMiddleware, usuarioController.cambiarPassword);
 
 //formulario de edicion de tu perfil
 router.get('/perfil/:id/editar', authMiddleware,usuarioController.editarForm);

@@ -1,0 +1,54 @@
+extends layout
+
+block content
+  .container.py-4
+    a.btn.btn-outline-secondary.mb-3(href=`/album/${imagen.album_id}/albums`) ← Volver al álbum
+
+    .row.justify-content-center
+      //- Card más angosto
+      .col-md-8.col-lg-6
+        .card.shadow-sm
+          .card-body
+
+            //--- Cabecera con autor ---
+            .d-flex.align-items-center.mb-3
+              img.rounded-circle.me-2(
+                src=imagen.Autor.avatarUrl || '/default-avatar.png',
+                alt="Avatar",
+                width="40",
+                height="40"
+              )
+              .fw-semibold #{imagen.Autor.nombre} #{imagen.Autor.apellido}
+
+            //--- Imagen centrada y más chica ---
+            .text-center.mb-3
+              img.img-fluid.rounded(
+                src=imagen.archivo,
+                alt=imagen.titulo,
+                style="max-height: 380px; object-fit: contain;"
+              )
+
+            //--- Título / descripción ---
+            if imagen.titulo
+              h5.mb-1= imagen.titulo
+            if imagen.descripcion
+              p.text-muted.mb-3= imagen.descripcion
+
+            hr
+
+            //--- Comentarios debajo de la foto ---
+            h5.mb-3 Comentarios
+            if imagen.Comentarios && imagen.Comentarios.length
+              each c in imagen.Comentarios
+                .d-flex.align-items-start.mb-2
+                  img.rounded-circle.me-2(
+                    src=c.Usuario.avatarUrl || '/default-avatar.png',
+                    alt="Avatar",
+                    width="32",
+                    height="32"
+                  )
+                  .bg-light.rounded-3.px-3.py-2.flex-grow-1
+                    strong.d-block.mb-1 #{c.Usuario.nombre} #{c.Usuario.apellido}
+                    span= c.text
+            else
+              p.text-muted.mb-0 Aún no hay comentarios en esta imagen.

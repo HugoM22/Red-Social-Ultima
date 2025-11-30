@@ -26,6 +26,13 @@ module.exports={
                 return res.render('login',{title:'Iniciar Sesion', error:'Credenciales Invalidas'});
             }
             req.session.usuarioId= usuario.id_usuario;
+            req.session.nombreUsuario= usuario.nombre;
+            req.session.apellidoUsuario= usuario.apellido;
+            req.session.avatarUrl= usuario.avatarUrl || 'default-avatar.png'; ; 
+
+            req.session.nombreUsuario= usuario.nombre;
+            req.session.apellidoUsuario= usuario.apellido;
+            req.session.avatarUrl= usuario.avatarUrl || '/default-avatar.png';
             res.redirect('/');
         }catch(err){
             next(err);
@@ -89,6 +96,10 @@ module.exports={
             await t.commit();
             //iniciar sesion automaticamente tras el registro
             req.session.usuarioId=usuario.id_usuario;
+            req.session.usuarioNombre   = usuario.nombre;
+            req.session.usuarioApellido = usuario.apellido;
+            req.session.usuarioAvatar   = usuario.avatarUrl || '/default-avatar.png';
+            
             res.redirect('/');
         }catch(err){
             await t.rollback();

@@ -11,6 +11,13 @@ router.get(
     imagenController.publicarForm
 );
 
+//ver detalle de una imagen
+router.get(
+    '/detalle/:id',
+    authMiddleware,
+    imagenController.detalle
+);
+
 //subir imagen a un album
 router.post(
     '/:albumId/imagen',

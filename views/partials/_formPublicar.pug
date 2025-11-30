@@ -1,9 +1,0 @@
-h2.h5.mt-4 Compartir una imagen
-form(method="post", action="/publicar", enctype="multipart/form-data").mb-4
-  input.form-control(type="file", name="archivo", required)
-  textarea.form-control.mt-2(name="descripcion", placeholder="Descripción")
-  label.mt-2.mb-1 Contactos que pueden verla
-  select.form-select(name="compartirCon", multiple, size="4")
-    each c in contactos
-      option(value=c.id)= `${c.nombre} ${c.apellido}`
-  button.btn.btn-primary.mt-2(type="submit") Publicar

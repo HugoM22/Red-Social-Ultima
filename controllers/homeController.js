@@ -163,42 +163,55 @@ module.exports = {
       const solicitante_id = req.session.usuarioId;
       const receptor_id = +req.body.receptorId;
       
-      // 1 comprobar duplicados en ambas direccion
+      // 1) comprobar duplicados en ambas direcciones
       const yaExiste = await Friend.findOne({
-        where: { solicitante_id, receptor_id }
+        where: {
+          [Op.or]: [
+            { solicitante_id, receptor_id },
+            { solicitante_id: receptor_id, receptor_id: solicitante_id }
+          ]
+        }
       });
-      if(yaExiste){
+      if (yaExiste) {
         return res.redirect('/');
       }
-      //2) si no existia, la creo
+
+      // 2) si no existía, la creo
       const nuevaSolicitud = await Friend.create({
         solicitante_id,
         receptor_id,
         estado: 'Pendiente'
       });
-      //Emitir notificacion en tiempo real al receptor
-      const io = req.app.get('io');
-      const onlineUsers = req.app.get('onlineUsers');
-      const socketId = onlineUsers[receptor_id];
 
-      if(socketId){
-        io.to(socketId).emit('notification:friend_request',{
+      // 3) Emitir notificación en tiempo real al receptor
+      const io          = req.app.get('io');
+      const onlineUsers = req.app.get('onlineUsers');
+      const socketId    = onlineUsers[receptor_id];
+
+      if (io && socketId) {
+        // saco los datos del usuario de la BD (no de la sesión)
+        const solicitante = await Usuario.findByPk(solicitante_id, {
+          attributes: ['id_usuario','nombre','apellido','avatarUrl']
+        });
+
+        io.to(socketId).emit('notification:friend_request', {
           solicitudId: nuevaSolicitud.id_friend,
-          from:{
-            id: solicitante_id,
-            nombre: req.session.usuarioNombre,
-            apellido: req.session.usuarioApellido,
-            avatarUrl: req.session.usuarioAvatar || '/default-avatar.png'
+          from: {
+            id: solicitante.id_usuario,
+            nombre: solicitante.nombre,
+            apellido: solicitante.apellido,
+            avatarUrl: solicitante.avatarUrl || '/default-avatar.png'
           }
-        })
+        });
       }
+
       return res.redirect('/');
     } catch (err) {
       next(err);
     }
   },
 
-  // 4) Responder solicitud de amistad
+  // 4) Responder solicitud de amistad (esta ya la tenés bien)
   async respondRequest(req, res, next) {
     try {
       const usuarioId = req.session.usuarioId;
@@ -209,16 +222,26 @@ module.exports = {
       sol.estado = action === 'aceptar' ? 'Aceptado' : 'Rechazado';
       await sol.save();
 
-      //emitir notificacion en tiempo real al solicitante
-      const io = req.app.get('io');
+      // emitir notificación en tiempo real al solicitante
+      const io          = req.app.get('io');
       const onlineUsers = req.app.get('onlineUsers');
-      const socketId = onlineUsers[sol.solicitante_id];
+      const socketId    = onlineUsers[sol.solicitante_id];
 
-      if(socketId){
-        io.to(socketId).emit('notification:friend_response',{
+      if (io && socketId) {
+        const usuarioAcept = await Usuario.findByPk(usuarioId, {
+          attributes: ['id_usuario','nombre','apellido','avatarUrl']
+        });
+
+        io.to(socketId).emit('notification:friend_response', {
           solicitudId,
-          estado: sol.estado
-        })
+          estado: sol.estado,
+          from: {
+            id: usuarioAcept.id_usuario,
+            nombre: usuarioAcept.nombre,
+            apellido: usuarioAcept.apellido,
+            avatarUrl: usuarioAcept.avatarUrl || '/default-avatar.png'
+          }
+        });
       }
 
       if (action === 'aceptar') {
@@ -356,11 +379,51 @@ module.exports = {
   async showNotificaciones(req, res, next) {
     try {
       const usuarioId = req.session.usuarioId;
+
+      // 1) Solicitudes de amistad pendientes
       const solicitudes = await Friend.findAll({
         where: { receptor_id: usuarioId, estado: 'Pendiente' },
-        include: [{ model: Usuario, as: 'Solicitante', attributes: ['id_usuario','nombre','apellido','avatarUrl'] }]
+        include: [
+          {
+            model: Usuario,
+            as: 'Solicitante',
+            attributes: ['id_usuario','nombre','apellido','avatarUrl']
+          }
+        ]
       });
-      return res.render('notificaciones', { solicitudes });
+
+      // 2) Comentarios en tus imágenes
+      const comentarios = await Comentario.findAll({
+        include: [
+          {
+            model: Imagen,
+            attributes: ['id_imagen','titulo','archivo','album_id','usuario_id'],
+            include: [
+              {
+                model: Usuario,
+                as: 'Autor',
+                attributes: ['id_usuario']
+              }
+            ]
+          },
+          {
+            model: Usuario,
+            as: 'Usuario', // quien comenta
+            attributes: ['id_usuario','nombre','apellido','avatarUrl']
+          }
+        ],
+        // Solo comentarios sobre imágenes cuyo autor sos vos
+        where: {
+          '$Imagen.Autor.id_usuario$': usuarioId
+        },
+        order: [['creado_en','DESC']],
+        limit: 20
+      });
+
+      return res.render('notificaciones', {
+        solicitudes,
+        comentarios
+      });
     } catch (err) {
       next(err);
     }

@@ -1,5 +1,6 @@
+
 const { Op } = require('sequelize');
-const { Album, Friend, Usuario, Imagen } = require('../models');
+const { Album, Friend, Usuario, Imagen, Comentario } = require('../models');
 const ImagenCompartida = require('../models/ImagenCompartida');
 
 module.exports = {
@@ -47,6 +48,45 @@ module.exports = {
     }
   },
 
+  //ver detalle de una imagen concreta
+  async detalle(req, res, next) {
+    try {
+      const imagenId  = req.params.id;
+      const usuarioId = req.session.usuarioId;
+
+      const imagen = await Imagen.findByPk(imagenId, {
+        include: [
+          {
+            model: Usuario,
+            as: 'Autor',
+            attributes: ['id_usuario', 'nombre', 'apellido', 'avatarUrl']
+          },
+          {
+            model: Comentario,
+            as: 'Comentarios',
+            include: [
+              {
+                model: Usuario,
+                as: 'Usuario',
+                attributes: ['id_usuario', 'nombre', 'apellido', 'avatarUrl']
+              }
+            ],
+          
+          }
+        ],
+        order: [[{ model: Comentario, as: 'Comentarios' }, 'creado_en', 'DESC']]
+      });
+
+      if (!imagen) {
+        return res.status(404).render('404');
+      }
+
+      res.render('imagenDetalle', { imagen, usuarioId });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   // Subir imagen a un álbum y compartirla
   async subir(req, res, next) {
     try {
@@ -59,7 +99,7 @@ module.exports = {
         return res.status(400).send('No se subió ningún archivo.');
       }
 
-      // 2) Verificar que el álbum exista y sea tuyo
+      // 2) Verificar que el álbum exista y que pertenezca al usuario
       const album = await Album.findOne({
         where: { id_album: albumId, usuario_id: usuarioId }
       });
@@ -76,7 +116,7 @@ module.exports = {
         descripcion
       });
 
-      // 4) Compartir con los contactos seleccionados (si los hubo)
+      // 4) Compartir con los contactos seleccionados
       const lista = Array.isArray(req.body.compartirCon)
         ? req.body.compartirCon
         : [req.body.compartirCon].filter(Boolean);
@@ -95,3 +135,4 @@ module.exports = {
     }
   }
 };
+

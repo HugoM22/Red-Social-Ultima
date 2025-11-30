@@ -1,12 +1,12 @@
 const { Op } = require('sequelize');
-const {Usuario, Album,Imagen,Friend} = require('../models');
+const {Usuario, Album,Imagen,Friend,Login} = require('../models');
+const bcrypt = require('bcrypt');
 module.exports={
     // Mostrar perfil del usuario con sus albumnes
     async verPerfil(req,res,next){
         try{
             const usuarioId= req.params.id;
             const usuario = await Usuario.findByPk(usuarioId,{
-                attributes:['id_usuario','nombre','email','avatarUrl'],
                 include:[
                     {
                         model: Album,
@@ -40,8 +40,30 @@ module.exports={
     async actualizar(req,res,next){
         try{
             const usuarioId = req.session.usuarioId;
-            const {nombre,email}=req.body;
-        await Usuario.update({nombre,email},{where:{id:usuarioId}});
+            const{
+                nombre,
+                apellido,
+                sexo,
+                intereses,
+                antecedentes
+            } = req.body;
+            await Usuario.update(
+                {
+                    nombre,
+                    apellido,
+                    sexo,
+                    intereses,
+                    antecedentes
+                },
+                {where: {id_usuario: usuarioId}}
+            );
+            // actualizar datos
+            req.session.nombre = nombre;
+            req.session.apellido = apellido;
+
+            req.session.nombreUsuario = nombre;
+            req.session.apellidoUsuario = apellido;
+            
             res.redirect(`/usuarios/perfil/${usuarioId}`);
         }catch(err){
             next(err);
@@ -52,13 +74,20 @@ module.exports={
         try{
             const usuarioId = req.session.usuarioId;
             const file = req.file;
-            if(!file)return res.status(400).send('No se subio ninguna');
+            if(!file) return res.status(400).send('No se subió ninguna imagen');
+
+            const avatarUrl = `/uploads/${file.filename}`;
+
             await Usuario.update(
-                {avatarUrl: `/uploads/${file.filename}`},
-                {where: {id_usuario: usuarioId}}
+            { avatarUrl },
+            { where: { id_usuario: usuarioId } }
             );
+            // actualizar datos de sesion
+            req.session.usuarioAvatar = avatarUrl;
+
+            res.redirect(`/usuarios/perfil/${usuarioId}`);
         }catch(err){
-            next(err)
+            next(err);
         }
     },
     //listar todos los usuarios (menos el logueado)
@@ -74,28 +103,77 @@ module.exports={
             next(err);
         }
     },
-    //Enviar solicitud de amistad
-    async enviarSolicitud(req,res,next){
-        try{
-            const solicitante_id = req.session.usuarioId;
-            const {receptorId} = req.body;
 
-            //enviar duplicados
-            const existe = await Friend.findOne({
-                where:{
-                    solicitante_id,
-                    receptor_id: receptorId,
-                },
-            });
-            if(!existe){
-                await Friend.create({
-                    solicitante_id,
-                    receptor_id: receptorId,
-                    estado:'Pendiente',
-                });
+    // Mostrar formulario de cambio de contraseña
+    async formPassword(req,res,next){
+        try{
+            const usuarioId = req.session.usuarioId;
+
+            if (+req.params.id !== usuarioId) {
+            return res.redirect('/'); 
             }
-            res.redirect('/usuarios/explorar');
-        } catch(err){
+
+            res.render('perfilPassword', { usuarioId });
+        }catch(err){
+            next(err);
+        }
+    },
+    // Procesar cambio de contraseña
+    async cambiarPassword(req,res,next){
+        try{
+            const usuarioId = req.session.usuarioId;
+
+            if (+req.params.id !== usuarioId) {
+            return res.redirect('/');
+            }
+
+            const { actual, nueva, confirmar } = req.body;
+
+            if (!actual || !nueva || !confirmar) {
+            return res.render('perfilPassword', {
+                usuarioId,
+                error: 'Completá todos los campos.'
+            });
+            }
+
+            if (nueva !== confirmar) {
+            return res.render('perfilPassword', {
+                usuarioId,
+                error: 'La nueva contraseña y la confirmación no coinciden.'
+            });
+            }
+
+            // Buscar login del usuario
+            const login = await Login.findOne({
+            where: { usuario_id: usuarioId }
+            });
+
+            if (!login) {
+            return res.render('perfilPassword', {
+                usuarioId,
+                error: 'No se encontró el registro de login.'
+            });
+            }
+
+            // Verificar contraseña actual
+            const ok = await bcrypt.compare(actual, login.contrasenia);
+            if (!ok) {
+            return res.render('perfilPassword', {
+                usuarioId,
+                error: 'La contraseña actual es incorrecta.'
+            });
+            }
+
+            // Hashear nueva contraseña
+            const hash = await bcrypt.hash(nueva, 10);
+            login.contrasenia = hash;
+            await login.save();
+
+            res.render('perfilPassword', {
+            usuarioId,
+            success: 'La contraseña se actualizó correctamente.'
+            });
+        }catch(err){
             next(err);
         }
     }

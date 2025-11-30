@@ -4,20 +4,43 @@ block content
   .container.mt-5
     .text-center.mb-4
       img.rounded-circle.shadow.mb-3(
-        src=usuario.avatarUrl || "/default-avatar.png",
+        src= usuario.avatarUrl || "/default-avatar.png",
         alt="Foto de perfil",
         width="180",
         height="180"
       )
       h2.mb-1 #{usuario.nombre} #{usuario.apellido}
-      p.text-muted #{usuario.email}
+      - let fechaFormateada = ''
+      if usuario.fecha_nacimiento
+        - const d = new Date(usuario.fecha_nacimiento)
+        - const dia = String(d.getDate()).padStart(2, '0')
+        - const mes = String(d.getMonth() + 1).padStart(2, '0')
+        - const anio = d.getFullYear()
+        - fechaFormateada = `${dia}/${mes}/${anio}`
 
-      //– FORMULARIO PARA CAMBIAR AVATAR
+      p.text-muted.mb-1= fechaFormateada
+      p.text-muted.mb-1 #{usuario.sexo}
+      p.text-muted.mb-1 #{usuario.intereses}
+      p.text-muted.mb-1 #{usuario.antecedentes}
+      p.text-muted.mb-0 #{usuario.email}
+
+      //- FORMULARIO Y BOTONES
       if session.usuarioId == usuario.id_usuario
+
+        //  BOTONES
+        .d-flex.justify-content-center.gap-2.mt-3
+          a.btn.btn-outline-primary(href=`/usuarios/perfil/${usuario.id_usuario}/editar`)
+            i.fas.fa-edit.me-1
+            | Editar perfil
+
+          a.btn.btn-outline-secondary(href=`/usuarios/perfil/${usuario.id_usuario}/password`)
+            i.fas.fa-key.me-1
+            | Cambiar contraseña
+
+        // Formulario para cambiar foto
         form.mt-3(method="post", action=`/usuarios/perfil/${usuario.id_usuario}/avatar`, enctype="multipart/form-data")
           input.form-control(type="file", name="avatar", accept="image/*", required)
           button.btn.btn-sm.btn-outline-primary.mt-2(type="submit") Cambiar foto de perfil
-
 
     .d-flex.justify-content-between.align-items-center.mt-5.mb-3
       h4.fw-bold.text-dark Mis Álbumes
@@ -26,11 +49,9 @@ block content
     .row
       each album in usuario.Albums
         .col-lg-4.col-md-6.col-sm-12.mb-4
-          //– Enlaza a la ruta que muestra un álbum concreto
           a(href=`/album/${album.id_album}/albums`, style="text-decoration:none;")
             .card.shadow-sm.h-100
               if album.Imagens && album.Imagens.length
-                //– Mostrar la primera imagen como portada
                 img.card-img-top(
                   src=album.Imagens[0].archivo,
                   alt=album.titulo,
@@ -44,6 +65,5 @@ block content
                 )
               .card-body.py-2
                 h6.card-title.text-center.text-dark= album.titulo
-                //– Opcional: mostrar cantidad de imágenes y fecha de creación
                 p.text-center.text-muted.mb-0 #{album.Imagens ? album.Imagens.length : 0} imagen(es)
                 small.d-block.text-center.text-muted Creado el #{album.creado_en.toLocaleDateString()}
