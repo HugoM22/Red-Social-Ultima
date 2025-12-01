@@ -1,5 +1,5 @@
 const { Op, where } = require('sequelize');
-const { Usuario, Friend, Album, Imagen, ImagenCompartida, Comentario } = require('../models');
+const { Usuario, Friend, Album, Imagen, ImagenCompartida, Comentario, Notificacion } = require('../models');
 
 module.exports = {
   // 1) Página principal (Home)
@@ -165,22 +165,25 @@ module.exports = {
       
       // 1) comprobar duplicados en ambas direcciones
       const yaExiste = await Friend.findOne({
-        where: {
-          [Op.or]: [
-            { solicitante_id, receptor_id },
-            { solicitante_id: receptor_id, receptor_id: solicitante_id }
-          ]
-        }
+        where: {solicitante_id, receptor_id}
       });
       if (yaExiste) {
-        return res.redirect('/');
+        return res.redirect('/explorar');
       }
 
-      // 2) si no existía, la creo
+      // 2) Crear solicitud
       const nuevaSolicitud = await Friend.create({
         solicitante_id,
         receptor_id,
         estado: 'Pendiente'
+      });
+
+     //Crear notificación para el receptor
+      await Notificacion.create({
+        usuario_id: receptor_id,
+        tipo: 'Solicitud',
+        mensaje: 'Has recibido una nueva solicitud de amistad',
+        origin_id: nuevaSolicitud.id_friend
       });
 
       // 3) Emitir notificación en tiempo real al receptor
@@ -211,7 +214,7 @@ module.exports = {
     }
   },
 
-  // 4) Responder solicitud de amistad (esta ya la tenés bien)
+  // 4) Responder solicitud de amistad
   async respondRequest(req, res, next) {
     try {
       const usuarioId = req.session.usuarioId;
@@ -221,6 +224,25 @@ module.exports = {
 
       sol.estado = action === 'aceptar' ? 'Aceptado' : 'Rechazado';
       await sol.save();
+
+      // Marcar notificación como leída
+      await Notificacion.update(
+        { leido: true },
+        {
+          where: {
+            usuario_id: usuarioId,
+            tipo: 'Solicitud',
+            origin_id: solicitudId
+          }
+        }
+      );
+      // Crear notificación para el solicitante
+      await Notificacion.create({
+        usuario_id: sol.solicitante_id,
+        tipo: 'Solicitud',
+        mensaje: `Tu solicitud fue ${sol.estado.toLowerCase()}`,
+        origin_id: sol.id_friend
+      });
 
       // emitir notificación en tiempo real al solicitante
       const io          = req.app.get('io');
@@ -419,11 +441,60 @@ module.exports = {
         order: [['creado_en','DESC']],
         limit: 20
       });
+      // 3) Todas las notificaciones del usuario
+      const notifs = await Notificacion.findAll({
+        where: { usuario_id: usuarioId }
+      });
+
+      // 4) IDs de origen NO leídos
+      const solicitudesNoLeidasIds = notifs
+        .filter(n => n.tipo === 'Solicitud' && !n.leido)
+        .map(n => n.origin_id);
+
+      const comentariosNoLeidosIds = notifs
+        .filter(n => n.tipo === 'Comentario' && !n.leido)
+        .map(n => n.origin_id);
 
       return res.render('notificaciones', {
         solicitudes,
-        comentarios
+        comentarios,
+        solicitudesNoLeidasIds,
+        comentariosNoLeidosIds
+      })
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // 8) Ver notificación de comentario
+  async verNotificacionComentario(req, res, next) {
+    try {
+      const usuarioId   = req.session.usuarioId;
+      const comentarioId = req.params.id;
+
+      // 1) Marcar notificación como leída
+      await Notificacion.update(
+        { leido: true },
+        {
+          where: {
+            usuario_id: usuarioId,
+            tipo: 'Comentario',
+            origin_id: comentarioId
+          }
+        }
+      );
+
+      // 2) Buscar el comentario para saber a qué imagen corresponde
+      const comentario = await Comentario.findByPk(comentarioId, {
+        include: [{ model: Imagen, attributes: ['id_imagen'] }]
       });
+
+      if (!comentario || !comentario.Imagen) {
+        return res.redirect('/notificaciones');
+      }
+
+      // 3) Redirigir al detalle de la imagen
+      return res.redirect(`/imagen/detalle/${comentario.Imagen.id_imagen}`);
     } catch (err) {
       next(err);
     }

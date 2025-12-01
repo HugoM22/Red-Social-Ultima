@@ -18,7 +18,7 @@ const usuarioRoutes = require('./routes/usuarioRoutes');
 const albumRoutes   = require('./routes/albumRoutes');
 const imagenRoutes  = require('./routes/imagenRoutes');
 const friendRoutes  = require('./routes/friendRoutes');
-const { Friend }    = require('./models');
+const { Friend, Notificacion }    = require('./models');
 const { log } = require('console');
 
 
@@ -68,11 +68,18 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Contador de solicitudes
 app.use(async (req, res, next) => {
   if (req.session.usuarioId) {
-    res.locals.pendingFriendCount = await Friend.count({
-      where: { receptor_id: req.session.usuarioId, estado: 'Pendiente' }
+    const userId = req.session.usuarioId;
+
+    const pendientes = await Notificacion.count({
+      where: {
+        usuario_id: userId,
+        leido: false
+      }
     });
+
+    res.locals.pendingNotificationsCount = pendientes;
   } else {
-    res.locals.pendingFriendCount = 0;
+    res.locals.pendingNotificationsCount = 0;
   }
   next();
 });

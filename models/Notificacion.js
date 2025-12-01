@@ -23,7 +23,7 @@ module.exports = (sequelize,DataTypes)=>{
         leido:{
             type: DataTypes.BOOLEAN,
             allowNull: false,
-            defaultValue: DataTypes.NOW
+            defaultValue: false
         }
         },{
             //tableName: 'notificacion',

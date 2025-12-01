@@ -31,5 +31,9 @@ router.post(
 // crear comentario en una imagen
 router.post('/comment', comentarioController.create);
 
+// ver notificaciones
 router.get('/notificaciones', homeController.showNotificaciones);
+
+// ver notificacion de comentario
+router.get('/notificaciones/comentario/:id', homeController.verNotificacionComentario);
 module.exports = router;

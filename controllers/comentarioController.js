@@ -1,4 +1,4 @@
-const { Comentario, Imagen, Usuario} = require('../models');
+const { Comentario, Imagen, Usuario,Notificacion} = require('../models');
 
 module.exports = {
   // Crear un comentario sobre una imagen compartida
@@ -42,18 +42,29 @@ module.exports = {
         const onlineUsers = req.app.get('onlineUsers');
         const socketId = onlineUsers[imagen.Autor.id_usuario];
 
-        if(socketId){
-            io.to(socketId).emit('notification:new_comment',{
+        // Evitar notificar si el autor del comentario es el mismo que el de la imagen
+        if (imagen.Autor.id_usuario !== usuarioId) {
+            // Guardar notificación en BD
+            await Notificacion.create({
+                usuario_id: imagen.Autor.id_usuario,
+                tipo: 'Comentario',
+                mensaje: `Tu imagen "${imagen.titulo}" recibió un nuevo comentario`,
+                origin_id: comment.id_comentario
+            });
+
+            if(socketId){
+                io.to(socketId).emit('notification:new_comment',{
                 imagenId: imagenId,
                 comentarioId: comment.id_comentario,
                 autor:{
                     id: usuarioId,
-                    nombre: nombreSesion,
-                    apellido: apellidoSesion,
-                    avatarUrl: avatarSesion
+                    nombre: req.session.usuarioNombre || req.session.nombreUsuario,
+                    apellido: req.session.usuarioApellido || req.session.apellidoUsuario,
+                    avatarUrl: req.session.usuarioAvatar || req.session.avatarUrl || '/default-avatar.png'
                 },
                 excerpt: comment.text.slice(0,30)
-            });
+                });
+            }
         }
         return res.redirect(req.get('Referer')||'/');
         } catch (err) {

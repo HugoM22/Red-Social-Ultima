@@ -5,17 +5,26 @@ block content
     h2.mb-4 Solicitudes de amistad
     if solicitudes.length 
       each s in solicitudes 
-        .d-flex.align-items-center.mb-2 
+        - const esNueva = solicitudesNoLeidasIds && solicitudesNoLeidasIds.includes(s.id_friend);
+
+        .d-flex.align-items-center.mb-2.p-2.rounded-3(
+          class= esNueva ? 'bg-light border-start border-4 border-primary' : ''
+        )
           img.rounded-circle.me-2(
             src=s.Solicitante.avatarUrl || '/default-avatar.png',
             width=40,
             height=40
           )
-          span.me-auto #{s.Solicitante.nombre} #{s.Solicitante.apellido}
+          span.me-auto
+            strong #{s.Solicitante.nombre} #{s.Solicitante.apellido}
           form.d-inline(method='post', action='/friend/respond')
             input(type='hidden', name='solicitudId', value=s.id_friend)
             button.btn.btn-sm.btn-success.me-1(type='submit', name='action',  value='aceptar') ✔
             button.btn.btn-sm.btn-danger(type='submit', name='action', value='rechazar') ✖
+          if esNueva
+            span.ms-2.rounded-circle.bg-primary(
+              style='width:10px;height:10px;display:inline-block;'
+            )
     else 
       p.text-muted No tienes solicitudes pendientes.
 
@@ -24,7 +33,11 @@ block content
     h2.mb-3 Nuevos comentarios en tus imágenes
     if comentarios && comentarios.length
       each c in comentarios
-        .d-flex.align-items-start.mb-3
+        - const esNuevo = comentariosNoLeidosIds && comentariosNoLeidosIds.includes(c.id_comentario);
+
+        .d-flex.align-items-start.mb-3.p-2.rounded-3(
+          class= esNuevo ? 'bg-light border-start border-4 border-primary' : ''
+        )
           img.rounded-circle.me-2(
             src=c.Usuario.avatarUrl || '/default-avatar.png',
             width=40,
@@ -34,8 +47,15 @@ block content
             p.mb-1
               strong #{c.Usuario.nombre} #{c.Usuario.apellido}
               |  comentó en 
-              a(href=`/imagen/detalle/${c.Imagen.id_imagen}`) #{c.Imagen.titulo}
+              // 🔹 Pasamos por la ruta que marca la notificación como leída
+              a(href=`/notificaciones/comentario/${c.id_comentario}`) #{c.Imagen.titulo}
             small.text-muted
               = c.text && c.text.length > 80 ? c.text.substring(0, 80) + '...' : c.text
+          if esNuevo
+            span.ms-2.rounded-circle.bg-primary(
+              style='width:10px;height:10px;display:inline-block;'
+            )
     else
       p.text-muted No hay comentarios en tus imágenes.
+
+
