@@ -2,10 +2,52 @@
     width: 100%;
     max-width: 500px;
     height: 300px;
-    object-fit: contain; /* Cambia cover por contain */
-    background: #f8f9fa; /* Fondo claro */
+    object-fit: contain; 
+    background: #f8f9fa; 
     border-radius: 8px;
     border: 1px solid #e0e0e0;
     display: block;
     margin: 0 auto;
+}
+.post-caption {
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.75rem;
+  background: #f8f9fa;          
+  border: 1px solid #e5e7eb;    
+}
+
+.post-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #0d6efd;               
+  margin-bottom: 0.15rem;
+}
+
+.post-description {
+  font-size: 0.9rem;
+  color: #495057;
+  line-height: 1.4;
+  margin-bottom: 0;
+}
+.comments-box {
+  background: #f8f9fa;           
+  border: 1px solid #e5e7eb;     
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+}
+
+/* Cada comentario dentro de la caja */
+.comment-item {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.comment-item:last-child {
+  border-bottom: none;          
+}
+
+.comment-item small {
+  font-size: 0.88rem;
+  color: #495057;
 }

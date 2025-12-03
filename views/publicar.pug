@@ -5,14 +5,32 @@ block content
     h1.mb-4 Publicar Imagen
 
     //– 1) Crear álbum
-    form.d-flex.mb-4(method="post", action="/album/crear")
-      input.form-control(type="text", name="titulo", placeholder="Título del nuevo álbum", required)
-      button.btn.btn-outline-secondary.ms-2(type="submit") Crear
+    form(method="post", action="/album/crear").mb-4
+      .mb-2.d-flex
+        input.form-control(type="text", name="titulo", placeholder="Título del nuevo álbum", required)
+        button.btn.btn-outline-secondary.ms-2(type="submit") Crear
+
+      // Etiquetas para el álbum
+      if tags && tags.length
+        label.form-label.mt-2.mb-1 Etiquetas (técnicas / materiales / estilos)
+        .d-flex.flex-wrap
+          each t in tags
+            .form-check.me-3.mb-1
+              input.form-check-input(
+                type="checkbox",
+                name="tags",
+                id=`tag-${t.id_tag}`,
+                value=t.id_tag
+              )
+              label.form-check-label(for=`tag-${t.id_tag}`)= t.nombre
+        small.text-muted.d-block.mt-1
+          | Podés elegir una o varias etiquetas.
+      else
+        p.text-muted.mt-2 No hay etiquetas definidas todavía.
 
     //– 2) Compartir una imagen
     h2.h5.mt-4 Compartir una imagen
     form#formPublicar(method="post", action="/publicar", enctype="multipart/form-data")
-      
       //– Álbum donde publicar
       label.form-label(for="albumSelect") Álbum donde publicar
       select.form-select(name="albumId", id="albumSelect", required)

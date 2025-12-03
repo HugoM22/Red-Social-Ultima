@@ -1,6 +1,6 @@
 
 const { Op } = require('sequelize');
-const { Album, Friend, Usuario, Imagen, Comentario } = require('../models');
+const { Album, Friend, Usuario, Imagen, Comentario,Tag } = require('../models');
 const ImagenCompartida = require('../models/ImagenCompartida');
 
 module.exports = {
@@ -32,21 +32,38 @@ module.exports = {
           { model: Usuario, as: 'Receptor',    attributes: ['id_usuario','nombre','apellido'] }
         ]
       });
-      const contactos = amigos.map(f => {
+
+      // ❗ Deduplicar contactos (si hay A→B y B→A solo aparece una vez)
+      const contactos = amigos.reduce((acc, f) => {
         const a = f.solicitante_id === usuarioId ? f.Receptor : f.Solicitante;
-        return { id: a.id_usuario, nombre: `${a.nombre} ${a.apellido}` };
+
+        if (!acc.find(u => u.id === a.id_usuario)) {
+          acc.push({
+            id: a.id_usuario,
+            nombre: `${a.nombre} ${a.apellido}`
+          });
+        }
+
+        return acc;
+      }, []);
+
+      // 3) Tags
+      const tags = await Tag.findAll({
+        order: [['nombre', 'ASC']]
       });
 
       return res.render('publicar', {
         misAlbumnesPropios,
         contactos,
         solicitudes: [],
-        compartidas: []
+        compartidas: [],
+        tags
       });
     } catch (err) {
       next(err);
     }
   },
+
 
   //ver detalle de una imagen concreta
   async detalle(req, res, next) {

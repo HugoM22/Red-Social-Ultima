@@ -42,7 +42,29 @@ block content
           input.form-control(type="file", name="avatar", accept="image/*", required)
           button.btn.btn-sm.btn-outline-primary.mt-2(type="submit") Cambiar foto de perfil
 
-    .d-flex.justify-content-between.align-items-center.mt-5.mb-3
+    //ESTADÍSTICAS DEL PERFIL
+    if stats
+      .row.mt-3.mb-4.justify-content-center
+        .col-lg-8
+          .card.shadow-sm
+            .card-body.d-flex.flex-wrap.justify-content-around.text-center
+              .mx-3.my-2
+                div.fw-bold.fs-5 #{stats.totalImagenes}
+                small.text-muted Imágenes subidas
+              .mx-3.my-2
+                div.fw-bold.fs-5 #{stats.totalAlbums}
+                small.text-muted Álbumnes
+              .mx-3.my-2
+                div.fw-bold.fs-5 #{stats.totalComentariosRecibidos}
+                small.text-muted Comentarios recibidos
+              .mx-3.my-2
+                div.fw-bold.fs-5 #{stats.totalAmigos}
+                small.text-muted Amistades
+              .mx-3.my-2
+                div.fw-bold.fs-5 #{stats.totalEventosInscripto}
+                small.text-muted Eventos inscripto(s)
+
+    .d-flex.justify-content-between.align-items-center.mt-4.mb-3
       h4.fw-bold.text-dark Mis Álbumes
       a.text-primary.fw-normal(href="/albumes") Ver todos los álbumes
 
@@ -67,3 +89,4 @@ block content
                 h6.card-title.text-center.text-dark= album.titulo
                 p.text-center.text-muted.mb-0 #{album.Imagens ? album.Imagens.length : 0} imagen(es)
                 small.d-block.text-center.text-muted Creado el #{album.creado_en.toLocaleDateString()}
+

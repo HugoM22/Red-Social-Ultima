@@ -18,6 +18,7 @@ const usuarioRoutes = require('./routes/usuarioRoutes');
 const albumRoutes   = require('./routes/albumRoutes');
 const imagenRoutes  = require('./routes/imagenRoutes');
 const friendRoutes  = require('./routes/friendRoutes');
+const eventoRoutes  = require('./routes/eventoRoutes');
 const { Friend, Notificacion }    = require('./models');
 const { log } = require('console');
 
@@ -91,6 +92,7 @@ app.use('/usuarios', usuarioRoutes);
 app.use('/album', albumRoutes);
 app.use('/imagen', imagenRoutes);
 app.use('/friend', friendRoutes);
+app.use('/eventos', eventoRoutes);
 
 // 404
 app.use((req, res) => {

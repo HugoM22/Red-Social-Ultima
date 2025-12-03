@@ -1,32 +1,119 @@
 const { Op } = require('sequelize');
-const {Usuario, Album,Imagen,Friend,Login} = require('../models');
+const {Usuario, Album,Imagen,Friend,Login, Comentario,UsuarioEvento} = require('../models');
 const bcrypt = require('bcrypt');
 module.exports={
-    // Mostrar perfil del usuario con sus albumnes
-    async verPerfil(req,res,next){
-        try{
-            const usuarioId= req.params.id;
-            const usuario = await Usuario.findByPk(usuarioId,{
-                include:[
+    // Mostrar perfil del usuario con sus álbumes + estadísticas
+    async verPerfil(req, res, next) {
+        try {
+            const usuarioId = req.params.id;
+
+            // 1) Datos del usuario + sus álbumes
+            const usuario = await Usuario.findByPk(usuarioId, {
+            attributes: [
+                'id_usuario',
+                'nombre',
+                'apellido',
+                'email',
+                'avatarUrl',
+                'fecha_nacimiento',
+                'sexo',
+                'intereses',
+                'antecedentes',
+                'creado_en'
+            ],
+            include: [
+                {
+                model: Album,
+                attributes: ['id_album', 'titulo', 'creado_en'],
+                include: [
                     {
-                        model: Album,
-                        attributes:['id_album','titulo','creado_en'],
-                        include:[{
-                            model:Imagen,
-                            as: 'Imagens',
-                            attributes:['id_imagen','archivo','titulo'],
-                            order: [['creado_en','DESC']],
-                            limit: 1
-                        }]
+                    model: Imagen,
+                    as: 'Imagens',   
+                    attributes: ['id_imagen', 'archivo', 'titulo', 'creado_en']
                     }
                 ]
+                }
+            ]
             });
-            if(!usuario)return res.status(404).render('404');
-            res.render('perfil',{usuario});
-        }catch(err){
+
+            if (!usuario) return res.status(404).render('404');
+
+            // 2) Estadísticas básicas
+
+            // Albumnes subidos por este usuario
+            const totalAlbums = usuario.Albums ? usuario.Albums.length : 0;
+
+            // Imágenes subidas por este usuario
+            const totalImagenes = await Imagen.count({
+            where: { usuario_id: usuarioId }
+            });
+
+            // Ids de imágenes del usuario
+            const imagenesUsuario = await Imagen.findAll({
+            where: { usuario_id: usuarioId },
+            attributes: ['id_imagen']
+            });
+            const imagenIds = imagenesUsuario.map(i => i.id_imagen);
+
+            // Comentarios recibidos en esas imágenes
+            let totalComentariosRecibidos = 0;
+            if (imagenIds.length) {
+            totalComentariosRecibidos = await Comentario.count({
+                where: {
+                imagen_id: { [Op.in]: imagenIds }
+                }
+            });
+            }
+
+            // Amigos
+           const amistades = await Friend.findAll({
+            where: {
+                estado: 'Aceptado',
+                [Op.or]: [
+                { solicitante_id: usuarioId },
+                { receptor_id: usuarioId }
+                ]
+            },
+            attributes: ['solicitante_id', 'receptor_id']
+            });
+
+            const amigosIds = new Set();
+            const uid = Number(usuarioId);
+
+            for (const f of amistades) {
+                const otroId = f.solicitante_id === uid
+                    ? f.receptor_id
+                    : f.solicitante_id;
+                amigosIds.add(otroId);
+            }
+
+            const totalAmigos = amigosIds.size;
+
+            // Eventos a los que está inscripto
+            let totalEventosInscripto = 0;
+            try {
+                totalEventosInscripto = await UsuarioEvento.count({
+                    where: { usuario_id: usuarioId }
+                });
+                } catch (e) {
+                    totalEventosInscripto = 0;
+            }
+
+            const stats = {
+            totalImagenes,
+            totalAlbums,
+            totalComentariosRecibidos,
+            totalAmigos,
+            totalEventosInscripto
+            };
+
+            return res.render('perfil', { usuario, stats });
+        } catch (err) {
             next(err);
         }
     },
+
+
     //Mostrar Formulario de edicion de perfil
     async editarForm(req,res,next){
         try{

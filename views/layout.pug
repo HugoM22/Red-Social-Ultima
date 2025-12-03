@@ -8,73 +8,100 @@ html(lang="es")
       rel="stylesheet",
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     )
+    // Opcional: iconos Font Awesome (si los usás)
+    link(
+      rel="stylesheet",
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    )
     link(rel="stylesheet", href="/css/styles.css")
 
   body.bg-light
-    // Navbar todas las vistas
+    // NAVBAR
     nav.navbar.navbar-expand-lg.navbar-light.bg-white.shadow-sm
       .container-fluid
-        a.navbar-brand(href="/") Artesanos.com
+        // Marca
+        a.navbar-brand.fw-semibold(href="/") Artesanos.com
+
         button.navbar-toggler(type="button", data-bs-toggle="collapse", data-bs-target="#navbarNav")
           span.navbar-toggler-icon
 
         #navbarNav.collapse.navbar-collapse
-          ul.navbar-nav.mx-auto
-            li.nav-item.me-2
-              a.btn.btn-outline-primary(href="/explorar") Explorar usuarios
+          // Izquierda: botón publicar
+          ul.navbar-nav.me-auto
             li.nav-item
-              a.btn.btn-outline-success(href="/imagen/publicar") Publicar imagen
+              a.btn.btn-outline-success.ms-lg-2(href="/imagen/publicar") Publicar imagen
+            li.nav-item.ms-2
+              a.btn.btn-outline-info(href="/eventos") Eventos
 
-          ul.navbar-nav.ms-auto
 
-            // Avatar 
-            if session.usuarioId
-              li.nav-item.d-flex.align-items-center.me-3
-                a.d-flex.align-items-center.text-decoration-none(href=`/usuarios/perfil/${session.usuarioId}`)
+          // Centro: barra de búsqueda
+          form.d-flex.mx-auto.my-2.my-lg-0(
+            role="search",
+            method="get",
+            action="/buscar",
+            style="max-width: 420px;"
+          )
+            input.form-control.form-control-sm.me-2(
+              type="search",
+              name="q",
+              placeholder="Buscar artesanías, usuarios, álbumes...",
+              value=query || ''
+            )
+            button.btn.btn-outline-secondary.btn-sm(type="submit") Buscar
+
+          // Derecha: usuario, notificaciones, etc.
+          ul.navbar-nav.ms-auto.align-items-center
+            if session && session.usuarioId
+              // Avatar + nombre (en escritorio)
+              li.nav-item.me-3.d-none.d-lg-block
+                a.d-flex.align-items-center.text-decoration-none(
+                  href=`/usuarios/perfil/${session.usuarioId}`
+                )
                   img.rounded-circle.me-2(
-                    src= session.avatarUrl || '/default-avatar.png',
+                    src=session.avatarUrl || '/default-avatar.png',
                     alt="Avatar",
-                    width="40",
-                    height="40"
+                    width="36",
+                    height="36"
                   )
                   span.fw-semibold.text-dark #{session.usuarioNombre} #{session.usuarioApellido}
 
-            li.nav-item.me-3
-              a.nav-link(href=`/usuarios/perfil/${session.usuarioId}`)
-                i.far.fa-user.me-1
-                | Perfil
+              li.nav-item.me-3
+                a.nav-link(href=`/usuarios/perfil/${session.usuarioId}`)
+                  i.far.fa-user.me-1
+                  | Perfil
 
-            li.nav-item.me-3
-              a.nav-link.position-relative(href="/notificaciones")
-                i.far.fa-bell.me-1.fs-4
-                | Notificaciones
-                span#notif-count.badge.bg-danger.text-white.rounded-pill.position-absolute.top-0.start-100.translate-middle.p-2(
-                  style= pendingNotificationsCount > 0 ? '' : 'display:none'
-                )= pendingNotificationsCount || 0
+              li.nav-item.me-3.position-relative
+                a.nav-link(href="/notificaciones")
+                  i.far.fa-bell.me-1.fs-5
+                  | Notificaciones
+                  // badge siempre existe, se oculta si es 0 (para que JS no falle)
+                  span#notif-count.badge.bg-danger.text-white.rounded-pill.position-absolute.top-0.start-100.translate-middle.px-2(
+                    style=pendingFriendCount && pendingFriendCount > 0 ? '' : 'display:none;'
+                  )= pendingFriendCount || 0
 
-            li.nav-item.me-3
-              a.nav-link(href="/configuracion")
-                i.fas.fa-cog.me-1
-                | Configuración
+              li.nav-item
+                a.nav-link.text-danger(href="/logout")
+                  i.fas.fa-sign-out-alt.me-1
+                  | Cerrar sesión
 
-            li.nav-item
-              a.nav-link.text-danger(href="/logout")
-                i.fas.fa-sign-out-alt.me-1
-                | Cerrar sesión
+    // Contenedor de toasts global
+    #toast-container.toast-container.position-fixed.top-0.end-0.p-3(style="z-index: 1055;")
 
-    // contenedor global de toasts
-    div#toast-container.toast-container.position-fixed.bottom-0.end-0.p-3(style="z-index: 1055;")
-
+    // Contenido de cada vista
     block content
 
     script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js")
     script(src="/socket.io/socket.io.js")
 
+    // Exponer el ID de usuario a JS (para sockets)
     script.
-      window.SESSION_USER_ID = !{JSON.stringify(session.usuarioId || null)};
-
+      window.SESSION_USER_ID = !{session.usuarioId || 'null'};
 
     script(src="/js/notifications.js")
+
 
 
 

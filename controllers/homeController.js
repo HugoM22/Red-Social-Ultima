@@ -1,5 +1,5 @@
 const { Op, where } = require('sequelize');
-const { Usuario, Friend, Album, Imagen, ImagenCompartida, Comentario, Notificacion } = require('../models');
+const { Usuario, Friend, Album, Imagen, ImagenCompartida, Comentario, Notificacion, Tag,Evento, UsuarioEvento } = require('../models');
 
 module.exports = {
   // 1) Página principal (Home)
@@ -21,9 +21,10 @@ module.exports = {
           { model: Usuario, as: 'Receptor',    attributes: ['id_usuario','nombre','apellido','avatarUrl'] }
         ]
       });
+
       const contacts = amigos.reduce((acc, f) => {
         const amigo = (f.solicitante_id === usuarioId) ? f.Receptor : f.Solicitante;
-        // 2)evitar duplicados
+        // 2) evitar duplicados
         if (!acc.find(u => u.id === amigo.id_usuario)) {
           acc.push({
             id: amigo.id_usuario,
@@ -34,18 +35,21 @@ module.exports = {
         }
         return acc;
       }, []);
-      //-2 mis propias imaganes en home
-      const propias =await Imagen.findAll({
-        where:{usuario_id: usuarioId},
-        include:[
-          {model:Usuario, as: 'Autor', attributes:['id_usuario','nombre','apellido','avatarUrl']},
-          {model: Comentario, as: 'Comentarios',
-            include:[{model: Usuario, as: 'Usuario', attributes:['id_usuario','nombre','apellido','avatarUrl']}]
+
+      // — 2. Mis propias imágenes en home
+      const propias = await Imagen.findAll({
+        where: { usuario_id: usuarioId },
+        include: [
+          { model: Usuario, as: 'Autor', attributes: ['id_usuario','nombre','apellido','avatarUrl'] },
+          {
+            model: Comentario,
+            as: 'Comentarios',
+            include: [{ model: Usuario, as: 'Usuario', attributes: ['id_usuario','nombre','apellido','avatarUrl'] }]
           }
         ]
-      })
+      });
 
-      // — 3 Feed de imágenes compartidas conmigo
+      // — 3. Feed de imágenes compartidas conmigo
       const compartidas = await ImagenCompartida.findAll({
         where: { compartido_con_id: usuarioId },
         include: [{
@@ -70,29 +74,31 @@ module.exports = {
 
       // — 4. Mapear a posts para la vista
       const ownPosts = propias.map(img => ({
-          id: img.id_imagen,
-          descripcion:img.descripcion,
-          imageUrl: img.archivo,
-          createdAt: img.creado_en,
-          user: img.Autor,
-          comentarios: (img.Comentarios || []).map(cm => ({
-            id: cm.id_comentario,
-            contenido: cm.text,
-            creadoEn: cm.creado_en,
-            user: {
-              id: cm.Usuario.id_usuario,
-              nombre: cm.Usuario.nombre,
-              apellido: cm.Usuario.apellido,
-              avatarUrl: cm.Usuario.avatarUrl
-            }
-          }))
+        id: img.id_imagen,
+        titulo: img.titulo,
+        descripcion: img.descripcion,
+        imageUrl: img.archivo,
+        createdAt: img.creado_en,
+        user: img.Autor,
+        comentarios: (img.Comentarios || []).map(cm => ({
+          id: cm.id_comentario,
+          contenido: cm.text,
+          creadoEn: cm.creado_en,
+          user: {
+            id: cm.Usuario.id_usuario,
+            nombre: cm.Usuario.nombre,
+            apellido: cm.Usuario.apellido,
+            avatarUrl: cm.Usuario.avatarUrl
+          }
+        }))
       }));
 
       const sharedPosts = compartidas.map(c => {
         const img = c.Imagen;
         return {
           id: img.id_imagen,
-          descripcion:img.descripcion,
+          titulo: img.titulo,
+          descripcion: img.descripcion,
           imageUrl: img.archivo,
           createdAt: img.creado_en,
           user: img.Autor,
@@ -109,9 +115,26 @@ module.exports = {
           }))
         };
       });
+
       const posts = [...ownPosts, ...sharedPosts]
-        .sort((a,b)=>b.createdAt - a.createdAt)
-      return res.render('home', { posts, contacts });
+        .sort((a, b) => b.createdAt - a.createdAt);
+
+      // — 5. Próximos eventos donde estoy inscripto (ordenados por fecha)
+      const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+
+      const eventos = await Evento.findAll({
+        include: [{
+          model: UsuarioEvento,
+          where: { usuario_id: usuarioId },
+          attributes: []      
+        }],
+        where: {
+          fecha: { [Op.gte]: today }
+        },
+        order: [['fecha', 'ASC']] 
+      });
+
+      return res.render('home', { posts, contacts, eventos });
     } catch (err) {
       next(err);
     }
@@ -168,7 +191,7 @@ module.exports = {
         where: {solicitante_id, receptor_id}
       });
       if (yaExiste) {
-        return res.redirect('/explorar');
+        return res.redirect('/');
       }
 
       // 2) Crear solicitud
@@ -498,7 +521,158 @@ module.exports = {
     } catch (err) {
       next(err);
     }
-  }
+  },
+  // 9) Búsqueda global
+  async buscar(req, res, next) {
+    try {
+      const q = (req.query.q || '').trim();
+      const miId = req.session.usuarioId;
+
+      if (!q) {
+        return res.render('buscar', {
+          query: '',
+          usuarios: [],
+          albums: [],
+          imagenes: []
+        });
+      }
+
+      const like = `%${q}%`;
+
+      // 1) Usuarios por nombre / apellido / intereses
+      const usuariosDB = await Usuario.findAll({
+        where: {
+          id_usuario: { [Op.ne]: miId },
+          [Op.or]: [
+            { nombre:    { [Op.like]: like } },
+            { apellido:  { [Op.like]: like } },
+            { intereses: { [Op.like]: like } }
+          ]
+        },
+        attributes: ['id_usuario', 'nombre', 'apellido', 'avatarUrl']
+      });
+
+      let usuarios = [];
+
+      if (usuariosDB.length > 0) {
+        const idsUsuarios = usuariosDB.map(u => u.id_usuario);
+
+      // Traer relaciones de amistad con esos usuarios
+        const amistades = await Friend.findAll({
+          where: {
+            [Op.or]: [
+              { solicitante_id: miId, receptor_id: { [Op.in]: idsUsuarios } },
+              { solicitante_id: { [Op.in]: idsUsuarios }, receptor_id: miId }
+            ]
+          }
+        });
+
+        // Mapa: idUsuario ↦ { tipo, friendId }
+        const relacionesMap = {};
+        amistades.forEach(a => {
+          const otroId = a.solicitante_id === miId ? a.receptor_id : a.solicitante_id;
+
+          let tipo;
+          if (a.estado === 'Aceptada') {
+            tipo = 'amigos';
+          } else if (a.estado === 'Pendiente') {
+            tipo = a.solicitante_id === miId
+              ? 'pendiente_enviada'
+              : 'pendiente_recibida';
+          }
+
+          relacionesMap[otroId] = {
+            tipo,
+            friendId: a.id_friend || a.id
+          };
+        });
+
+        // Pasamos a objetos plain + la relación
+        usuarios = usuariosDB.map(u => ({
+          ...u.get({ plain: true }),
+          relacion: relacionesMap[u.id_usuario] || null
+        }));
+      }
+
+      // 2) Álbumes por título
+      const albumsTitulo = await Album.findAll({
+        where: { titulo: { [Op.like]: like } },
+        include: [
+          {
+            model: Usuario,
+            attributes: ['id_usuario', 'nombre', 'apellido', 'avatarUrl']
+          },
+          {
+            model: Tag,
+            through: { attributes: [] }
+          }
+        ]
+      });
+
+      // 3) Álbumes por tag
+      const albumsPorTag = await Album.findAll({
+        include: [
+          {
+            model: Tag,
+            through: { attributes: [] },
+            where: { nombre: { [Op.like]: like } }
+          },
+          {
+            model: Usuario,
+            attributes: ['id_usuario', 'nombre', 'apellido', 'avatarUrl']
+          }
+        ]
+      });
+
+      // Deduplicar álbumes
+      const albumsMap = new Map();
+      for (const a of [...albumsTitulo, ...albumsPorTag]) {
+        if (!albumsMap.has(a.id_album)) {
+          albumsMap.set(a.id_album, a);
+        }
+      }
+      const albums = Array.from(albumsMap.values());
+
+      // 4) Imágenes por título / descripción o por tag del álbum
+      const imagenes = await Imagen.findAll({
+        include: [
+          {
+            model: Usuario,
+            as: 'Autor',
+            attributes: ['id_usuario', 'nombre', 'apellido', 'avatarUrl']
+          },
+          {
+            model: Album,
+            required: false,
+            include: [
+              {
+                model: Tag,
+                required: false,
+                through: { attributes: [] }
+              }
+            ]
+          }
+        ],
+        where: {
+          [Op.or]: [
+            { titulo:      { [Op.like]: like } },
+            { descripcion: { [Op.like]: like } },
+            { '$Album.Tags.nombre$': { [Op.like]: like } }
+          ]
+        },
+        order: [['creado_en', 'DESC']]
+      });
+
+      return res.render('buscar', {
+        query: q,
+        usuarios,
+        albums,
+        imagenes
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
 };
 
 

@@ -14,6 +14,9 @@ router.get('/',homeController.showHome);
 //Explorar usuriaos 
 router.get('/explorar', homeController.showExplorar);
 
+//Busqueda global
+router.get('/buscar', homeController.buscar);
+
 //Enviar solicitud de amistad
 router.post('/friend/request',homeController.sendRequest);
 

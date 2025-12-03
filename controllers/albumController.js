@@ -1,4 +1,4 @@
-const { Album, Imagen } = require('../models');
+const { Album, Imagen,Tag,AlbumTag } = require('../models');
 
 module.exports = {
   // Mostrar un álbum y todas sus imágenes
@@ -27,17 +27,47 @@ module.exports = {
   },
 
   // Formulario para crear álbum
-  formCrear(req, res) {
-    res.render('albumCrear');
-  },
+  formCrear: async (req, res, next) => {
+    try {
+      const tags = await Tag.findAll({
+        order: [['nombre', 'ASC']]
+      });
+
+      res.render('albumCrear', { tags });
+    } catch (err) {
+      next(err);
+    }
+},
 
   // Crear álbum
   async crear(req, res, next) {
     try {
       const usuarioId = req.session.usuarioId;
       const { titulo } = req.body;
-      await Album.create({ titulo, usuario_id: usuarioId });
-      res.redirect('/imagen/publicar');
+      let { tags } = req.body;
+
+      // 1) Crear el álbum
+      const album = await Album.create({
+        titulo,
+        usuario_id: usuarioId
+      });
+
+      // 2) Asociar los tags seleccionados
+      if (tags) {
+        if (!Array.isArray(tags)) {
+          tags = [tags];
+        }
+
+        for (const tagId of tags) {
+          await AlbumTag.create({
+            album_id: album.id_album,
+            tag_id: tagId
+          });
+        }
+      }
+
+      // 3) Volver a la pantalla de publicar
+      return res.redirect('/imagen/publicar');
     } catch (err) {
       next(err);
     }

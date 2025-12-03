@@ -1,0 +1,113 @@
+extends layout
+
+block content
+  .container.py-4
+    .row.justify-content-center
+      .col-lg-10
+        // Título y texto de búsqueda
+        h1.h4.mb-2 Búsqueda
+
+        if query
+          p.text-muted.mb-4
+            | Resultados para "
+            strong= query
+            | "
+        else
+          p.text-muted Escribí algo en la barra de búsqueda para comenzar.
+
+        // USUARIOS
+        .card.mb-4.shadow-sm
+          .card-body
+            h2.h5.mb-3 Usuarios
+            if usuarios.length
+              each u in usuarios
+                .d-flex.align-items-center.justify-content-between.mb-2
+                  // Link al perfil
+                  a.d-flex.align-items-center.text-decoration-none.text-dark(
+                    href=`/usuarios/perfil/${u.id_usuario}`
+                  )
+                    img.rounded-circle.me-3(
+                      src=u.avatarUrl || '/default-avatar.png',
+                      width=40,
+                      height=40
+                    )
+                    .d-flex.flex-column
+                      span.fw-semibold #{u.nombre} #{u.apellido}
+                      small.text-muted Ver perfil
+
+                  // Botones según relación
+                  - const r = u.relacion
+
+                  if !r
+                    // No hay relación -> Agregar
+                    form(method="post", action="/friend/request")
+                      input(type="hidden", name="receptorId", value=u.id_usuario)
+                      button.btn.btn-sm.btn-outline-primary(type="submit") Agregar
+                  else if r.tipo === 'amigos'
+                    // Ya son amigos -> Dejar de ser amigos
+                    form(method="post", action="/friend/remove")
+                      input(type="hidden", name="friendId", value=r.friendId)
+                      button.btn.btn-sm.btn-outline-danger(type="submit") Dejar de ser amigos
+                  else if r.tipo === 'pendiente_enviada'
+                    // Vos ya le mandaste solicitud
+                    button.btn.btn-sm.btn-secondary(type="button" disabled) Solicitud enviada
+                  else if r.tipo === 'pendiente_recibida'
+                    // Él/ella te mandó solicitud
+                    form(method="post", action="/friend/accept")
+                      input(type="hidden", name="friendId", value=r.friendId)
+                      button.btn.btn-sm.btn-success(type="submit") Aceptar
+            else
+              p.text-muted.mb-0 No se encontraron usuarios.
+
+        // ÁLBUMES
+        .card.mb-4.shadow-sm
+          .card-body
+            h2.h5.mb-3 Álbumes
+            if albums.length
+              .row
+                each a in albums
+                  .col-md-6.mb-3
+                    .card.h-100.border-0.bg-light
+                      .card-body
+                        h5.card-title.mb-1= a.titulo
+                        if a.Usuario
+                          small.text-muted
+                            | De #{a.Usuario.nombre} #{a.Usuario.apellido}
+                        if a.Tags && a.Tags.length
+                          small.d-block.mt-1.text-muted
+                            | Etiquetas:
+                            each t, idx in a.Tags
+                              | #{idx ? ', ' : ' '}#{t.nombre}
+                        a.stretched-link(href=`/album/${a.id_album}/albums`)
+            else
+              p.text-muted.mb-0 No se encontraron álbumes.
+
+        // IMÁGENES 
+        .card.mb-4.shadow-sm
+          .card-body
+            h2.h5.mb-3 Imágenes
+            if imagenes.length
+              .row
+                each img in imagenes
+                  .col-md-4.mb-3
+                    .card.h-100
+                      .ratio.ratio-4x3
+                        img.card-img-top(
+                          src=img.archivo,
+                          alt=img.titulo,
+                          style="object-fit: cover;"
+                        )
+                      .card-body
+                        h5.card-title.mb-1= img.titulo
+                        if img.descripcion
+                          p.card-text.text-muted.mb-1
+                            - const d = img.descripcion || ''
+                            = d.length > 70 ? d.substring(0,70) + '...' : d
+                        if img.Autor
+                          small.text-muted
+                            | Autor: #{img.Autor.nombre} #{img.Autor.apellido}
+                      a.stretched-link(href=`/imagen/detalle/${img.id_imagen}`)
+            else
+              p.text-muted.mb-0 No se encontraron imágenes.
+
+

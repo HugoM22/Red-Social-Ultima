@@ -10,40 +10,52 @@ block content
         if posts.length
           each post in posts
             .card.mb-4
-              //- Cabecera con autor y fecha
+              // Cabecera con autor y fecha
               .card-header.d-flex.align-items-center
                 img.rounded-circle(
                   src= post.user.avatarUrl || '/default-avatar.png',
                   alt='Avatar',
                   width='40',
-                  height='40'
+                  height='40',
+                  style='object-fit:cover;'
                 )
-                .ms-2-auto
-                  strong= `${post.user.nombre} ${post.user.apellido}`
-                  small.text-muted.ms-2= new Date(post.createdAt).toLocaleDateString()
-
-              //- Imagen (si existe)
-              if post.imageUrl
-                img.card-img-top.feed-image(src=post.imageUrl, alt='Imagen compartida')
+                .ms-2
+                  strong.d-block= `${post.user.nombre} ${post.user.apellido}`
+                  small.text-muted= new Date(post.createdAt).toLocaleDateString()
 
               .card-body
-                p.card-text= post.descripcion
+                // Título arriba de la foto
+                if post.titulo
+                  h6.post-title.mb-2= post.titulo
 
-                //- Lista de comentarios
+                // Imagen
+                if post.imageUrl
+                  img.feed-image.mb-2(
+                    src=post.imageUrl,
+                    alt=post.titulo || 'Imagen compartida'
+                  )
+
+                // Descripción debajo de la foto
+                if post.descripcion
+                  p.post-description.mb-3= post.descripcion
+
+                // Lista de comentarios
                 if post.comentarios && post.comentarios.length
-                  each cm in post.comentarios
-                    .d-flex.align-items-start.mb-2
-                      img.rounded-circle.me-2(
-                        src=cm.user.avatarUrl || '/default-avatar.png',
-                        width='30',
-                        height='30'
-                      )
-                      .flex-grow-1
-                        small
-                          b= cm.user.nombre + ': '
-                          |  #{cm.contenido}
+                  .comments-box.mb-2
+                    each cm in post.comentarios
+                      .comment-item.d-flex.align-items-start
+                        img.rounded-circle.me-2(
+                          src=cm.user.avatarUrl || '/default-avatar.png',
+                          width='30',
+                          height='30',
+                          style='object-fit:cover;'
+                        )
+                        .flex-grow-1
+                          small
+                            b= cm.user.nombre + cm.user.apellido + ': '
+                            |  #{cm.contenido}
 
-                //- Formulario inline para nuevo comentario
+                // Formulario inline para nuevo comentario
                 form.d-flex.mt-3(method="post", action="/comment")
                   input(type="hidden", name="imagenId", value=post.id)
                   input.form-control.me-2(
