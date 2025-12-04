@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const {Usuario, Album,Imagen,Friend,Login, Comentario,UsuarioEvento} = require('../models');
+const {Usuario, Album,Imagen,Friend,Login, Comentario,UsuarioEvento, ImagenCompartida} = require('../models');
 const bcrypt = require('bcrypt');
 module.exports={
     // Mostrar perfil del usuario con sus álbumes + estadísticas
@@ -28,7 +28,8 @@ module.exports={
                 include: [
                     {
                     model: Imagen,
-                    as: 'Imagens',   
+                    as: 'Imagens',
+                    limit: 1,   
                     attributes: ['id_imagen', 'archivo', 'titulo', 'creado_en']
                     }
                 ]

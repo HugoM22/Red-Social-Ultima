@@ -1,23 +1,58 @@
-const { Album, Imagen, Tag, AlbumTag } = require('../models');
+const { Album, Imagen, Tag, AlbumTag,ImagenCompartida,Usuario } = require('../models');
 
 module.exports = {
   // Mostrar un álbum y todas sus imágenes
   async listar(req, res, next) {
     try {
-      const albumId = req.params.id;
+      const albumId   = req.params.id;
       const usuarioId = req.session.usuarioId;
 
+      // 1) Buscar el álbum y validar que sea mío
       const album = await Album.findOne({
         where: { id_album: albumId, usuario_id: usuarioId }
       });
-      if (!album) return res.status(404).render('404');
 
-      const imagenes = await Imagen.findAll({
-        where: { album_id: albumId },
-        order: [['creado_en', 'DESC']]
-      });
+      if (!album) {
+        return res.status(404).render('404');
+      }
 
-      res.render('albums', { album, imagenes });
+      let imagenes = [];
+      let amigo = null;
+
+      // 2) Si es un álbum AUTO-CREADO, mostrar fotos compartidas por ese amigo
+      if (album.autoCreado && album.amigo_id) {
+        // Traigo datos del amigo para mostrar en la vista
+        amigo = await Usuario.findByPk(album.amigo_id, {
+          attributes: ['id_usuario', 'nombre', 'apellido', 'avatarUrl']
+        });
+
+        imagenes = await Imagen.findAll({
+          where: {
+            usuario_id: album.amigo_id   // imágenes creadas por el amigo
+          },
+          include: [
+            {
+              model: ImagenCompartida,
+              required: true,
+              where: {
+                usuario_id:       album.amigo_id, // quien las comparte
+                compartido_con_id: usuarioId      // yo
+              }
+            }
+          ],
+          order: [['creado_en', 'DESC']]
+        });
+
+      } else {
+        // 3) Si es un álbum normal, como lo tenías antes
+        imagenes = await Imagen.findAll({
+          where: { album_id: albumId },
+          order: [['creado_en', 'DESC']]
+        });
+      }
+
+      // 4) Renderizar vista
+      res.render('albums', { album, imagenes, amigo });
     } catch (err) {
       next(err);
     }

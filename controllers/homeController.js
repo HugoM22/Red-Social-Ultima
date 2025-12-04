@@ -294,6 +294,7 @@ module.exports = {
         await Album.create({
           titulo:      `${usuarioAcept.nombre} ${usuarioAcept.apellido}`,
           usuario_id:  sol.solicitante_id,
+          amigo_id:    usuarioId,
           autoCreado:  true
         });
       }
