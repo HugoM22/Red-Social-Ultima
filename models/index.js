@@ -34,7 +34,7 @@ Usuario.hasMany(Imagen, { as: 'Imagenes', foreignKey: 'usuario_id' });
 
 //Relacion Imagen -> Album
 Imagen.belongsTo(Album, {foreignKey: 'album_id'});
-Album.hasMany(Imagen, {foreignKey: 'album_id'});
+Album.hasMany(Imagen, {foreignKey: 'album_id', as: 'Imagens'});
 
 //Relacion Comentarios -> Imagen y Usuario
 Comentario.belongsTo(Imagen, {foreignKey: 'imagen_id'});

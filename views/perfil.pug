@@ -10,13 +10,15 @@ block content
         height="180"
       )
       h2.mb-1 #{usuario.nombre} #{usuario.apellido}
-      - let fechaFormateada = ''
+
+      // --- FECHA DE NACIMIENTO ---
+      - fechaFormateada = ''
       if usuario.fecha_nacimiento
-        - const d = new Date(usuario.fecha_nacimiento)
-        - const dia = String(d.getDate()).padStart(2, '0')
-        - const mes = String(d.getMonth() + 1).padStart(2, '0')
-        - const anio = d.getFullYear()
-        - fechaFormateada = `${dia}/${mes}/${anio}`
+        - d = new Date(usuario.fecha_nacimiento)
+        - dia = String(d.getDate()).padStart(2, '0')
+        - mes = String(d.getMonth() + 1).padStart(2, '0')
+        - anio = d.getFullYear()
+        - fechaFormateada = dia + '/' + mes + '/' + anio
 
       p.text-muted.mb-1= fechaFormateada
       p.text-muted.mb-1 #{usuario.sexo}
@@ -24,25 +26,22 @@ block content
       p.text-muted.mb-1 #{usuario.antecedentes}
       p.text-muted.mb-0 #{usuario.email}
 
-      //- FORMULARIO Y BOTONES
+      //- FORMULARIO Y BOTONES (solo si es mi propio perfil)
       if session.usuarioId == usuario.id_usuario
-
-        //  BOTONES
         .d-flex.justify-content-center.gap-2.mt-3
-          a.btn.btn-outline-primary(href=`/usuarios/perfil/${usuario.id_usuario}/editar`)
+          a.btn.btn-outline-primary(href="/usuarios/perfil/" + usuario.id_usuario + "/editar")
             i.fas.fa-edit.me-1
             | Editar perfil
 
-          a.btn.btn-outline-secondary(href=`/usuarios/perfil/${usuario.id_usuario}/password`)
+          a.btn.btn-outline-secondary(href="/usuarios/perfil/" + usuario.id_usuario + "/password")
             i.fas.fa-key.me-1
             | Cambiar contraseña
 
-        // Formulario para cambiar foto
-        form.mt-3(method="post", action=`/usuarios/perfil/${usuario.id_usuario}/avatar`, enctype="multipart/form-data")
+        form.mt-3(method="post", action="/usuarios/perfil/" + usuario.id_usuario + "/avatar", enctype="multipart/form-data")
           input.form-control(type="file", name="avatar", accept="image/*", required)
           button.btn.btn-sm.btn-outline-primary.mt-2(type="submit") Cambiar foto de perfil
 
-    //ESTADÍSTICAS DEL PERFIL
+    // ESTADÍSTICAS DEL PERFIL
     if stats
       .row.mt-3.mb-4.justify-content-center
         .col-lg-8
@@ -53,7 +52,7 @@ block content
                 small.text-muted Imágenes subidas
               .mx-3.my-2
                 div.fw-bold.fs-5 #{stats.totalAlbums}
-                small.text-muted Álbumnes
+                small.text-muted Álbumes
               .mx-3.my-2
                 div.fw-bold.fs-5 #{stats.totalComentariosRecibidos}
                 small.text-muted Comentarios recibidos
@@ -64,28 +63,42 @@ block content
                 div.fw-bold.fs-5 #{stats.totalEventosInscripto}
                 small.text-muted Eventos inscripto(s)
 
+    // MIS ÁLBUMES
     .d-flex.justify-content-between.align-items-center.mt-4.mb-3
       h4.fw-bold.text-dark Mis Álbumes
 
     .row
       each album in usuario.Albums
-        .col-lg-4.col-md-6.col-sm-12.mb-4
-          a(href=`/album/${album.id_album}/albums`, style="text-decoration:none;")
+        .col-lg-3.col-md-4.col-sm-6.mb-4 
+          a(href="/album/" + album.id_album + "/albums", style="text-decoration:none;")
             .card.shadow-sm.h-100
+
+              // --- calcular portada ---
+              - portada = null
               if album.Imagens && album.Imagens.length
-                img.card-img-top(
-                  src=album.Imagens[0].archivo,
-                  alt=album.titulo,
-                  style="height:200px; object-fit:cover;"
+                - portada = album.Imagens[0].archivo
+              else if album.portadaUrl
+                - portada = album.portadaUrl
+
+              // 💡 Usamos el contenedor .album-cover en vez de card-img-top
+              .album-cover
+                img(
+                  src= portada || "/camara-de-carpeta.png",
+                  alt= album.titulo,
+                  class="img-fluid"
                 )
-              else
-                img.card-img-top(
-                  src="/img/album-default.jpg",
-                  alt="Sin imágenes",
-                  style="height:200px; object-fit:cover;"
-                )
+
+              // --- calcular cantidad de imágenes ---
+              - cant = 0
+              if album.Imagens && album.Imagens.length
+                - cant = album.Imagens.length
+              else if album.cantidadCompartidas
+                - cant = album.cantidadCompartidas
+
               .card-body.py-2
                 h6.card-title.text-center.text-dark= album.titulo
-                p.text-center.text-muted.mb-0 #{album.Imagens ? album.Imagens.length : 0} imagen(es)
-                small.d-block.text-center.text-muted Creado el #{album.creado_en.toLocaleDateString()}
+                p.text-center.text-muted.mb-0 #{cant} imagen(es)
+                small.d-block.text-center.text-muted
+                  | Creado el #{album.creado_en.toLocaleDateString()}
+
 

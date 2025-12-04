@@ -24,12 +24,11 @@ module.exports={
             include: [
                 {
                 model: Album,
-                attributes: ['id_album', 'titulo', 'creado_en'],
+                attributes: ['id_album', 'titulo', 'creado_en','autoCreado', 'amigo_id'],
                 include: [
                     {
                     model: Imagen,
                     as: 'Imagens',
-                    limit: 1,   
                     attributes: ['id_imagen', 'archivo', 'titulo', 'creado_en']
                     }
                 ]
@@ -40,7 +39,36 @@ module.exports={
             if (!usuario) return res.status(404).render('404');
 
             // 2) Estadísticas básicas
+            const albums = usuario.Albums || [];
 
+            for (const album of albums) {
+            if (!album.autoCreado || !album.amigo_id) continue;
+
+            // Traer TODAS las imágenes compartidas por ese amigo con este usuario
+            const compartidas = await ImagenCompartida.findAll({
+                where: {
+                usuario_id:       album.amigo_id,      // el que comparte
+                compartido_con_id: usuario.id_usuario  // este perfil
+                },
+                include: [{
+                model: Imagen,
+                attributes: ['archivo']
+                }],
+                order: [['id_imagenes_compartidas', 'DESC']]
+            });
+
+            // Cantidad total de compartidas para mostrar "X imagen(es)"
+            album.dataValues.cantidadCompartidas = compartidas.length;
+
+            // Si el álbum no tiene imagen propia, usar como portada la última compartida
+            if ((!album.Imagens || album.Imagens.length === 0) &&
+                compartidas[0] && compartidas[0].Imagen) {
+                album.dataValues.portadaUrl = compartidas[0].Imagen.archivo;
+            }
+            //album.dataValues.portadaUrl = "/camara-de-carpeta.png"; 
+            
+            continue;
+            }
             // Albumnes subidos por este usuario
             const totalAlbums = usuario.Albums ? usuario.Albums.length : 0;
 

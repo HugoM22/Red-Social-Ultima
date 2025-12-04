@@ -44,7 +44,7 @@ module.exports = {
         });
 
       } else {
-        // 3) Si es un álbum normal, como lo tenías antes
+        // 3) Álbum normal: traer todas las imágenes del álbum
         imagenes = await Imagen.findAll({
           where: { album_id: albumId },
           order: [['creado_en', 'DESC']]
