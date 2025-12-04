@@ -141,8 +141,6 @@ module.exports={
             next(err);
         }
     },
-
-
     //Mostrar Formulario de edicion de perfil
     async editarForm(req,res,next){
         try{
@@ -220,7 +218,6 @@ module.exports={
             next(err);
         }
     },
-
     // Mostrar formulario de cambio de contraseña
     async formPassword(req,res,next){
         try{
