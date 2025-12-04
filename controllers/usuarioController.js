@@ -170,7 +170,8 @@ module.exports={
             { where: { id_usuario: usuarioId } }
             );
             // actualizar datos de sesion
-            req.session.usuarioAvatar = avatarUrl;
+            //req.session.usuarioAvatar = avatarUrl;
+            req.session.avatarUrl = avatarUrl;
 
             res.redirect(`/usuarios/perfil/${usuarioId}`);
         }catch(err){
@@ -206,8 +207,8 @@ module.exports={
         }
     },
     // Procesar cambio de contraseña
-    async cambiarPassword(req,res,next){
-        try{
+    async cambiarPassword(req, res, next) {
+        try {
             const usuarioId = req.session.usuarioId;
 
             if (+req.params.id !== usuarioId) {
@@ -216,6 +217,7 @@ module.exports={
 
             const { actual, nueva, confirmar } = req.body;
 
+            // 1) Campos obligatorios
             if (!actual || !nueva || !confirmar) {
             return res.render('perfilPassword', {
                 usuarioId,
@@ -223,6 +225,23 @@ module.exports={
             });
             }
 
+            // 2) Longitud mínima de nueva contraseña
+            if (nueva.length < 6) {
+            return res.render('perfilPassword', {
+                usuarioId,
+                error: 'La nueva contraseña debe tener al menos 6 caracteres.'
+            });
+            }
+
+            // 3) Diferente de la actual
+            if (actual === nueva) {
+            return res.render('perfilPassword', {
+                usuarioId,
+                error: 'La nueva contraseña debe ser distinta de la actual.'
+            });
+            }
+
+            // 4) Confirmación
             if (nueva !== confirmar) {
             return res.render('perfilPassword', {
                 usuarioId,
@@ -256,12 +275,13 @@ module.exports={
             login.contrasenia = hash;
             await login.save();
 
-            res.render('perfilPassword', {
+            return res.render('perfilPassword', {
             usuarioId,
             success: 'La contraseña se actualizó correctamente.'
             });
-        }catch(err){
+        } catch (err) {
             next(err);
         }
     }
+
 };

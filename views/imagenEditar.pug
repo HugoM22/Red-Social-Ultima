@@ -1,0 +1,48 @@
+extends layout
+
+block content
+  .container.py-4
+    h1.h4.mb-4 Editar imagen
+
+    .row
+      .col-md-5.mb-3
+        img.img-fluid.rounded.shadow(src=imagen.archivo, alt=imagen.titulo)
+      .col-md-7
+        form(method="post", action=`/imagen/${imagen.id_imagen}/editar`)
+          .mb-3
+            label.form-label(for="titulo") Título
+            input.form-control(
+              type="text",
+              id="titulo",
+              name="titulo",
+              required,
+              value=imagen.titulo
+            )
+
+          .mb-3
+            label.form-label(for="descripcion") Descripción
+            textarea.form-control(
+              id="descripcion",
+              name="descripcion",
+              rows="3"
+            )= imagen.descripcion || ''
+
+          .mb-2
+            label.form-label Contactos que pueden verla
+            if contactos && contactos.length
+              each c in contactos
+                - const checked = compartidosIds && compartidosIds.includes(c.id)
+                .form-check
+                  input.form-check-input(
+                    type="checkbox",
+                    name="compartirCon[]",
+                    id=`contacto-${c.id}`,
+                    value=c.id,
+                    checked=checked
+                  )
+                  label.form-check-label(for=`contacto-${c.id}`)= c.nombre
+            else
+              p.text-muted No tenés contactos para compartir esta imagen.
+
+          button.btn.btn-primary.mt-3(type="submit") Guardar cambios
+          a.btn.btn-link.mt-3.ms-2(href=`/album/${imagen.album_id}/albums`) Volver al álbum

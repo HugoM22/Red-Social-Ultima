@@ -43,19 +43,19 @@ block content
                     form(method="post", action="/friend/request")
                       input(type="hidden", name="receptorId", value=u.id_usuario)
                       button.btn.btn-sm.btn-outline-primary(type="submit") Agregar
+  
                   else if r.tipo === 'amigos'
-                    // Ya son amigos -> Dejar de ser amigos
+                    button.btn.btn-sm.btn-outline-secondary(type="button" disabled) Amigos
+                  
+                  //- else if r.tipo === 'amigos'
+                     Ya son amigos -> Dejar de ser amigos
                     form(method="post", action="/friend/remove")
                       input(type="hidden", name="friendId", value=r.friendId)
                       button.btn.btn-sm.btn-outline-danger(type="submit") Dejar de ser amigos
+
                   else if r.tipo === 'pendiente_enviada'
                     // Vos ya le mandaste solicitud
                     button.btn.btn-sm.btn-secondary(type="button" disabled) Solicitud enviada
-                  else if r.tipo === 'pendiente_recibida'
-                    // Él/ella te mandó solicitud
-                    form(method="post", action="/friend/accept")
-                      input(type="hidden", name="friendId", value=r.friendId)
-                      button.btn.btn-sm.btn-success(type="submit") Aceptar
             else
               p.text-muted.mb-0 No se encontraron usuarios.
 

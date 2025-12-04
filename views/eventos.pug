@@ -2,7 +2,7 @@ extends layout
 
 block content
   .container.py-4
-    h1.h4.mb-4 Eventos y ferias
+    h1.h4.mb-4 Eventos y Ferias
 
     .row
       // Columna izquierda: crear evento
@@ -10,54 +10,109 @@ block content
         .card.shadow-sm
           .card-body
             h2.h6.mb-3 Crear un nuevo evento
+
+            // Mensaje de error si vino desde el controller
+            if error
+              .alert.alert-danger.mb-3= error
+
             form(method="post", action="/eventos/crear")
               .mb-2
                 label.form-label(for="titulo") Título
-                input.form-control(type="text", name="titulo", id="titulo", required)
+                input.form-control(
+                  type="text",
+                  name="titulo",
+                  id="titulo",
+                  required
+                  value= (old && old.titulo) ? old.titulo : ''
+                )
               .mb-2
                 label.form-label(for="descripcion") Descripción
-                textarea.form-control(name="descripcion", id="descripcion", rows="3", required)
+                textarea.form-control(
+                  name="descripcion",
+                  id="descripcion",
+                  rows="3",
+                  required
+                )= (old && old.descripcion) ? old.descripcion : ''
               .mb-2
                 label.form-label(for="fecha") Fecha
-                input.form-control(type="date", name="fecha", id="fecha", required)
+                input.form-control(
+                  type="date",
+                  name="fecha",
+                  id="fecha",
+                  required
+                  value= (old && old.fecha) ? old.fecha : ''
+                )
               .mb-3
                 label.form-label(for="lugar") Lugar
-                input.form-control(type="text", name="lugar", id="lugar", required)
+                input.form-control(
+                  type="text",
+                  name="lugar",
+                  id="lugar",
+                  required
+                  value= (old && old.lugar) ? old.lugar : ''
+                )
               button.btn.btn-primary(type="submit") Publicar evento
 
       // Columna derecha: lista de eventos
       .col-lg-8
-        if eventos.length
+        if eventos && eventos.length
           each e in eventos
             - const yaInscripto = inscritosIds && inscritosIds.includes(e.id_eventos)
+
             .card.mb-3.shadow-sm
               .card-body.d-flex.flex-column.flex-md-row.justify-content-between
+                // Info del evento
                 .me-md-3
                   h2.h6.mb-1= e.titulo
-                  small.text-muted
+
+                  small.text-muted.d-block
                     | Fecha:
                     |  
                     = new Date(e.fecha).toLocaleDateString()
-                  br
-                  small.text-muted
-                    | Lugar:
-                    |  
-                    = e.lugar
+
+                  if e.lugar
+                    small.text-muted.d-block
+                      | Lugar:
+                      |  
+                      = e.lugar
+
                   if e.Usuario
-                    br
-                    small.text-muted
+                    small.text-muted.d-block
                       | Organiza:
                       |  
                       = `${e.Usuario.nombre} ${e.Usuario.apellido}`
-                  p.mb-0.mt-2= e.descripcion
 
-                .d-flex.align-items-center.mt-3.mt-md-0
-                  if yaInscripto
-                    form(method="post", action=`/eventos/${e.id_eventos}/desinscribirse`)
-                      button.btn.btn-outline-danger.btn-sm(type="submit") Cancelar inscripción
-                  else
-                    form(method="post", action=`/eventos/${e.id_eventos}/inscribirse`)
-                      button.btn.btn-outline-success.btn-sm(type="submit") Inscribirme
+                  small.text-muted.d-block.mt-1
+                    | Inscriptos:
+                    |  
+                    = e.inscriptos || 0
+
+                  if e.esPasado
+                    span.badge.bg-secondary.mt-2 Evento expirado
+
+                  if e.descripcion
+                    p.mb-0.mt-2= e.descripcion
+
+                // Acciones (inscribirse / cancelar / editar / eliminar)
+                .d-flex.flex-column.align-items-end.mt-3.mt-md-0.gap-2
+                  // Botones de inscripción solo si NO está expirado
+                  if !e.esPasado
+                    if yaInscripto
+                      form(method="post", action=`/eventos/${e.id_eventos}/desinscribirse`)
+                        button.btn.btn-outline-danger.btn-sm(type="submit") Cancelar inscripción
+                    else
+                      form(method="post", action=`/eventos/${e.id_eventos}/inscribirse`)
+                        button.btn.btn-outline-success.btn-sm(type="submit") Inscribirme
+
+                  // Botón eliminar solo si es el creador
+                  if session && session.usuarioId == e.creado_por
+                    .d-flex.gap-2
+                      form(
+                        method="post",
+                        action=`/eventos/${e.id_eventos}/eliminar`,
+                        onsubmit="return confirm('¿Seguro que querés eliminar este evento?');"
+                      )
+                        button.btn.btn-sm.btn-outline-danger(type="submit") Eliminar
         else
           p.text-muted No hay eventos cargados todavía.
 

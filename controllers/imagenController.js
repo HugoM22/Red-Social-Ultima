@@ -1,7 +1,6 @@
 
 const { Op } = require('sequelize');
-const { Album, Friend, Usuario, Imagen, Comentario,Tag } = require('../models');
-const ImagenCompartida = require('../models/ImagenCompartida');
+const { Album, Friend, Usuario, Imagen, Comentario,Tag,ImagenCompartida } = require('../models');
 
 module.exports = {
   // Mostrar formulario de publicar
@@ -141,11 +140,123 @@ module.exports = {
       for (const receptor_id of lista) {
         await ImagenCompartida.create({
           imagen_id: imagen.id_imagen,
-          compartido_con_id: receptor_id
+          compartido_con_id: receptor_id,
+          usuario_id: usuarioId
         });
       }
 
       // 5) Redirigir al álbum
+      return res.redirect(`/album/${albumId}/albums`);
+    } catch (err) {
+      next(err);
+    }
+  },
+  async editarForm(req, res, next) {
+    try {
+      const usuarioId = req.session.usuarioId;
+      const imagenId  = +req.params.id;
+
+      const imagen = await Imagen.findByPk(imagenId);
+      if (!imagen) return res.status(404).render('404');
+      if (imagen.usuario_id !== usuarioId) return res.redirect('/');
+
+      // Contactos = amistades aceptadas
+      const amigos = await Friend.findAll({
+        where: {
+          estado: 'Aceptado',
+          [Op.or]: [
+            { solicitante_id: usuarioId },
+            { receptor_id:    usuarioId }
+          ]
+        },
+        include: [
+          { model: Usuario, as: 'Solicitante', attributes: ['id_usuario','nombre','apellido'] },
+          { model: Usuario, as: 'Receptor',    attributes: ['id_usuario','nombre','apellido'] }
+        ]
+      });
+
+      const contactos = amigos.reduce((acc, f) => {
+        const a = f.solicitante_id === usuarioId ? f.Receptor : f.Solicitante;
+        if (!acc.find(u => u.id === a.id_usuario)) {
+          acc.push({
+            id: a.id_usuario,
+            nombre: `${a.nombre} ${a.apellido}`
+          });
+        }
+        return acc;
+      }, []);
+
+      // Imagen compartida con
+      const compartidos = await ImagenCompartida.findAll({
+        where: { imagen_id: imagenId }
+      });
+      const compartidosIds = compartidos.map(c => c.compartido_con_id);
+
+      return res.render('imagenEditar', {
+        imagen,
+        contactos,
+        compartidosIds
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // Actualizar imagen
+  async actualizar(req, res, next) {
+    try {
+      const usuarioId = req.session.usuarioId;
+      const imagenId  = +req.params.id;
+      const { titulo, descripcion } = req.body;
+
+      const imagen = await Imagen.findByPk(imagenId);
+      if (!imagen) return res.status(404).render('404');
+      if (imagen.usuario_id !== usuarioId) return res.redirect('/');
+
+      await imagen.update({ titulo, descripcion });
+
+      // actualizar compartidos
+      const lista = Array.isArray(req.body.compartirCon)
+        ? req.body.compartirCon
+        : [req.body.compartirCon].filter(Boolean);
+
+      // borro compartidos anteriores
+      await ImagenCompartida.destroy({ where: { imagen_id: imagenId } });
+
+      // creo los nuevos
+      for (const receptor_id of lista) {
+        await ImagenCompartida.create({
+          imagen_id: imagenId,
+          compartido_con_id: receptor_id
+        });
+      }
+
+      return res.redirect(`/album/${imagen.album_id}/albums`);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // ✨ Eliminar imagen
+  async eliminar(req, res, next) {
+    try {
+      const usuarioId = req.session.usuarioId;
+      const imagenId  = +req.params.id;
+
+      const imagen = await Imagen.findByPk(imagenId);
+      if (!imagen) return res.status(404).render('404');
+      if (imagen.usuario_id !== usuarioId) return res.redirect('/');
+
+      const albumId = imagen.album_id;
+
+      // borro relaciones compartidas
+      await ImagenCompartida.destroy({ where: { imagen_id: imagenId } });
+
+      // (opcional) borrar comentarios también, si querés:
+      // await Comentario.destroy({ where: { imagen_id: imagenId } });
+
+      await imagen.destroy();
+
       return res.redirect(`/album/${albumId}/albums`);
     } catch (err) {
       next(err);

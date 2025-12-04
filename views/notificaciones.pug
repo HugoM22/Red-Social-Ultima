@@ -47,7 +47,7 @@ block content
             p.mb-1
               strong #{c.Usuario.nombre} #{c.Usuario.apellido}
               |  comentó en 
-              // 🔹 Pasamos por la ruta que marca la notificación como leída
+              // Enlace a la imagen comentada
               a(href=`/notificaciones/comentario/${c.id_comentario}`) #{c.Imagen.titulo}
             small.text-muted
               = c.text && c.text.length > 80 ? c.text.substring(0, 80) + '...' : c.text

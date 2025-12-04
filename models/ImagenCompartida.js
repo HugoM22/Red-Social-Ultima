@@ -1,3 +1,5 @@
+const Usuario = require("./Usuario")
+
 module.exports = (sequelize, DataTypes)=>{
     return sequelize.define('ImagenCompartida',{
         id_imagenes_compartidas:{
@@ -10,6 +12,11 @@ module.exports = (sequelize, DataTypes)=>{
             allowNull: false
         },
         compartido_con_id:{
+            type: DataTypes.INTEGER,
+            allowNull: false
+        
+        },
+        usuario_id: {
             type: DataTypes.INTEGER,
             allowNull: false
         },

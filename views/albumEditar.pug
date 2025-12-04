@@ -1,0 +1,42 @@
+extends layout
+
+block content
+  .container.py-4
+    h1.h4.mb-4 Editar álbum
+
+    form(method="post", action=`/album/${album.id_album}/editar`)
+      .mb-3
+        label.form-label(for="titulo") Título del álbum
+        input.form-control(
+          type="text",
+          id="titulo",
+          name="titulo",
+          required,
+          value=album.titulo
+        )
+      button.btn.btn-primary(type="submit") Guardar cambios
+      a.btn.btn-link.ms-2(href=`/album/${album.id_album}/albums`) Volver al álbum
+
+    hr.mt-4
+
+    h2.h5.mb-3 Imágenes del álbum
+    if imagenes && imagenes.length
+      .row
+        each img in imagenes
+          .col-md-4.mb-3
+            .card.h-100
+              img.card-img-top(
+                src=img.archivo,
+                alt=img.titulo,
+                style="height:180px; object-fit:cover;"
+              )
+              .card-body
+                h6.card-title= img.titulo
+                p.small.text-muted= img.descripcion
+                .d-flex.justify-content-between
+                  a.btn.btn-sm.btn-outline-primary(href=`/imagen/${img.id_imagen}/editar`) Editar
+                  form(method="post", action=`/imagen/${img.id_imagen}/eliminar`)
+                    button.btn.btn-sm.btn-outline-danger(type="submit", onclick="return confirm('¿Seguro que querés eliminar esta imagen?');")
+                      | Eliminar
+    else
+      p.text-muted Este álbum no tiene imágenes todavía.

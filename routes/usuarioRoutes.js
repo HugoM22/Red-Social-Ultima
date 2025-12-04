@@ -32,7 +32,5 @@ router.post(
     usuarioController.cambiarAvatar
 );
 
-//actualizacion de tu perfil
-// router.post('/:id/editar',authMiddleware,usuarioController.actualizar);
 
 module.exports = router;

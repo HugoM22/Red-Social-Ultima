@@ -410,7 +410,8 @@ module.exports = {
       for (const compartidoConId of lista) {
         await ImagenCompartida.create({
           imagen_id:          imagen.id_imagen,
-          compartido_con_id:  compartidoConId
+          compartido_con_id:  compartidoConId,
+          usuario_id: usuarioId
         });
       }
 
@@ -557,42 +558,68 @@ module.exports = {
       if (usuariosDB.length > 0) {
         const idsUsuarios = usuariosDB.map(u => u.id_usuario);
 
-      // Traer relaciones de amistad con esos usuarios
-        const amistades = await Friend.findAll({
+        // 1) Solicitudes que YO envié (salientes)
+        const salientes = await Friend.findAll({
           where: {
-            [Op.or]: [
-              { solicitante_id: miId, receptor_id: { [Op.in]: idsUsuarios } },
-              { solicitante_id: { [Op.in]: idsUsuarios }, receptor_id: miId }
-            ]
+            solicitante_id: miId,
+            receptor_id: { [Op.in]: idsUsuarios },
+            estado: { [Op.in]: ['Pendiente', 'Aceptado'] }
           }
         });
 
-        // Mapa: idUsuario ↦ { tipo, friendId }
-        const relacionesMap = {};
-        amistades.forEach(a => {
-          const otroId = a.solicitante_id === miId ? a.receptor_id : a.solicitante_id;
+        // 2) Solicitudes que ellos me mandaron a MÍ y están pendientes (entrantes)
+        const entrantesPend = await Friend.findAll({
+          where: {
+            receptor_id: miId,
+            solicitante_id: { [Op.in]: idsUsuarios },
+            estado: 'Pendiente'
+          }
+        });
 
-          let tipo;
-          if (a.estado === 'Aceptada') {
-            tipo = 'amigos';
-          } else if (a.estado === 'Pendiente') {
-            tipo = a.solicitante_id === miId
-              ? 'pendiente_enviada'
-              : 'pendiente_recibida';
+        const salientesMap = {};
+        salientes.forEach(f => {
+          salientesMap[f.receptor_id] = f;
+        });
+
+        const entrantesMap = {};
+        entrantesPend.forEach(f => {
+          entrantesMap[f.solicitante_id] = f;
+        });
+
+        // 3) Construir la "relacion" desde MI punto de vista
+        usuarios = usuariosDB.map(u => {
+          const sal = salientesMap[u.id_usuario];    // yo -> ellx
+          const ent = entrantesMap[u.id_usuario];    // ellx -> yo (pendiente)
+
+          let relacion = null;
+
+          if (sal) {
+            if (sal.estado === 'Pendiente') {
+              relacion = {
+                tipo: 'pendiente_enviada',
+                friendId: sal.id_friend
+              };
+            } else if (sal.estado === 'Aceptado') {
+              relacion = {
+                tipo: 'amigos',       // yo ya puedo ver su contenido
+                friendId: sal.id_friend
+              };
+            }
+          } else if (ent) {
+            // Ellos me mandaron una solicitud pendiente
+            relacion = {
+              tipo: 'pendiente_recibida',
+              friendId: ent.id_friend
+            };
           }
 
-          relacionesMap[otroId] = {
-            tipo,
-            friendId: a.id_friend || a.id
+          return {
+            ...u.get({ plain: true }),
+            relacion
           };
         });
-
-        // Pasamos a objetos plain + la relación
-        usuarios = usuariosDB.map(u => ({
-          ...u.get({ plain: true }),
-          relacion: relacionesMap[u.id_usuario] || null
-        }));
       }
+
 
       // 2) Álbumes por título
       const albumsTitulo = await Album.findAll({

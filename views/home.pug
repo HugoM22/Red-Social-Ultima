@@ -3,13 +3,44 @@ extends layout
 block content
   .container.mt-4
     .row
-      //- Columna lateral (futuras funcionalidades)
-      .col-md-2
-      //- Feed central
-      .col-md-7
-        if posts.length
+      // Columna izquierda: Eventos
+      .col-md-3.mb-4
+        h5.mb-3.text-primary Eventos próximos
+        if eventos && eventos.length
+          each ev in eventos
+            .card.mb-3.shadow-sm.event-card(style="cursor: pointer; transition: transform 0.2s;")
+              .card-body.p-2
+                small.text-muted.d-block.mb-1
+                  strong Fecha: 
+                  = new Date(ev.fecha).toLocaleDateString()
+                h6.fw-bold.mb-1
+                  strong Titulo: 
+                  = ev.titulo
+                if ev.lugar
+                  small.text-secondary.d-block.mb-1
+                    strong Lugar: 
+                    = ev.lugar
+                if ev.descripcion
+                  small.text-muted
+                    strong Descripción: 
+                    - const d = ev.descripcion || ''
+                    = d.length > 60 ? d.substring(0, 60) + '…' : d
+            // Efecto hover para las tarjetas de eventos
+            style.
+              .event-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+              }
+        else
+          .card.shadow-sm
+            .card-body.p-3
+              small.text-muted No estás inscripto en eventos próximos.
+
+      // Columna central: Feed
+      .col-md-6
+        if posts && posts.length
           each post in posts
-            .card.mb-4
+            .card.mb-4.shadow-sm
               // Cabecera con autor y fecha
               .card-header.d-flex.align-items-center
                 img.rounded-circle(
@@ -20,43 +51,43 @@ block content
                   style='object-fit:cover;'
                 )
                 .ms-2
-                  strong.d-block= `${post.user.nombre} ${post.user.apellido}`
+                  strong.d-block #{post.user.nombre} #{post.user.apellido}
                   small.text-muted= new Date(post.createdAt).toLocaleDateString()
+
+              // Imagen principal
+              if post.imageUrl
+                img.card-img-top.feed-image(
+                  src=post.imageUrl,
+                  alt=post.titulo || 'Imagen compartida'
+                )
 
               .card-body
                 // Título arriba de la foto
                 if post.titulo
                   h6.post-title.mb-2= post.titulo
 
-                // Imagen
-                if post.imageUrl
-                  img.feed-image.mb-2(
-                    src=post.imageUrl,
-                    alt=post.titulo || 'Imagen compartida'
-                  )
-
                 // Descripción debajo de la foto
                 if post.descripcion
                   p.post-description.mb-3= post.descripcion
 
-                // Lista de comentarios
+                // Comentarios
                 if post.comentarios && post.comentarios.length
                   .comments-box.mb-2
                     each cm in post.comentarios
-                      .comment-item.d-flex.align-items-start
+                      .comment-item.d-flex.align-items-start.mb-1
                         img.rounded-circle.me-2(
                           src=cm.user.avatarUrl || '/default-avatar.png',
-                          width='30',
-                          height='30',
+                          width='28',
+                          height='28',
                           style='object-fit:cover;'
                         )
                         .flex-grow-1
                           small
-                            b= cm.user.nombre + cm.user.apellido + ': '
+                            b #{cm.user.nombre} #{cm.user.apellido}:
                             |  #{cm.contenido}
 
-                // Formulario inline para nuevo comentario
-                form.d-flex.mt-3(method="post", action="/comment")
+                // Formulario para nuevo comentario
+                form.d-flex.mt-2(method="post", action="/comment")
                   input(type="hidden", name="imagenId", value=post.id)
                   input.form-control.me-2(
                     type="text",
@@ -68,15 +99,26 @@ block content
         else
           p.text-muted Aún no hay publicaciones en tu feed.
 
-      //- Sección contactos
+      // Columna derecha: Contactos
       .col-md-3
         h5.mb-3 Mis contactos
-        if contacts.length
-          ul.list-group
-            each c in contacts
-              li.list-group-item.p-2
-                a(href=`/perfil/${c.id}`)
-                  img.rounded-circle.me-2(src=c.avatarUrl || '/default-avatar.png', width="24", height="24")
-                  |  #{c.nombre}
+        if contacts && contacts.length
+          .card.shadow-sm
+            ul.list-group.list-group-flush
+              each c in contacts
+                li.list-group-item.p-2
+                  a.d-flex.align-items-center.text-decoration-none.text-dark(
+                    href=`/usuarios/perfil/${c.id}`
+                  )
+                    img.rounded-circle.me-2(
+                      src=c.avatarUrl || '/default-avatar.png',
+                      width="30",
+                      height="30",
+                      style="object-fit:cover;"
+                    )
+                    span= `${c.nombre} ${c.apellido}`
         else
-          p.text-muted No tienes contactos aún.
+          .card.shadow-sm
+            .card-body.p-3
+              small.text-muted No tienes contactos aún.
+
